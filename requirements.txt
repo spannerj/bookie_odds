@@ -1,0 +1,4 @@
+Flask==1.0.2
+gunicorn==19.9.0
+requests==2.19.1
+selenium==3.14.1
