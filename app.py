@@ -1,4 +1,5 @@
 from flask import Flask
+import json
 from datetime import datetime
 app = Flask(__name__)
 
@@ -12,6 +13,16 @@ def homepage():
 
     <img src="http://loremflickr.com/600/400">
     """.format(time=the_time)
+
+@app.route('/cron')
+def cron():
+    data = {'result': 'OK'}
+    response = app.response_class(
+        response=json.dumps(data),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)
