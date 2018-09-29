@@ -8,6 +8,8 @@ import json
 import requests
 import shutil
 
+# web: gunicorn app:app --log-file=-
+
 def send_to_slack(section, postcode):
     # Set the webhook_url to the one provided by Slack when you create the webhook at https://my.slack.com/services/new/incoming-webhook/
     webhook_url = 'https://hooks.slack.com/services/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'
