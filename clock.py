@@ -8,7 +8,7 @@ sched = BlockingScheduler()
 #     print(datetime.datetime.now())
 #     print('This job is run every minute.')
 
-@sched.scheduled_job('cron', day_of_week='fri-sat', hour=1, minute=25)
+@sched.scheduled_job('cron', day_of_week='fri-sat', hour=1, minute=30)
 def scheduled_job():
     print(datetime.datetime.now())
     print('Scheduled job running.')
