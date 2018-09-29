@@ -1,6 +1,7 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+import os
 
 import datetime
 
@@ -14,6 +15,7 @@ def timed_job():
     options.add_argument("--window-size=1300,1000")
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
+    options.binary_location = os.environ['GOOGLE_CHROME_BIN']
     driver = webdriver.Chrome(options=options)
 
     driver.get("http://www.python.org")
