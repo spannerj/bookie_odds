@@ -32,7 +32,7 @@ def timed_job():
     driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, options=chrome_options)
     print('browser is ready')    
 
-    driver.get("http://www.python.org")
+    driver.get('http://www.python.org')
     print(datetime.datetime.now())
     print(driver.title)
     driver.close()
