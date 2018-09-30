@@ -26,14 +26,33 @@ def send_to_slack(section, postcode):
         )
 
 
-options = Options()  
-# options.add_argument("--headless")
-# options.add_argument("--start-maximized")
-# driver.set_window_size(1400,1000)
-options.add_argument("--window-size=1300,1000")
-options.add_argument('--disable-gpu')
-# options.add_argument('--no-sandbox')
-driver = webdriver.Chrome(options=options)
+chrome_options = Options()
+chrome_options.binary_location = GOOGLE_CHROME_BIN
+chrome_options.add_argument('--disable-gpu')
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--headless')
+driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, options=chrome_options)
+
+# chrome_exec_shim = os.environ.get("GOOGLE_CHROME_BIN", "chromedriver")
+# opts = webdriver.ChromeOptions()
+# opts.binary_location = chrome_exec_shim
+# opts.add_argument('--disable-gpu')
+# opts.add_argument('--no-sandbox')
+# driver = webdriver.Chrome(options=opts)
+
+# chrome_bin = os.environ.get('GOOGLE_CHROME_SHIM', None)
+# opts = ChromeOptions()
+# opts.binary_location = chrome_bin
+# driver = webdriver.Chrome(executable_path="chromedriver", options=opts) 
+
+# options = Options()  
+# # options.add_argument("--headless")
+# # options.add_argument("--start-maximized")
+# # driver.set_window_size(1400,1000)
+# options.add_argument("--window-size=1300,1000")
+# options.add_argument('--disable-gpu')
+# # options.add_argument('--no-sandbox')
+# driver = webdriver.Chrome(options=options)
 
 try:
     import os

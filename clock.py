@@ -14,6 +14,7 @@ def timed_job():
     # options.add_argument("--start-maximized")
     options.add_argument("--window-size=1300,1000")
     options.add_argument('--disable-gpu')
+    options.add_argument('--remote-debugging-port=9222')
     options.add_argument('--no-sandbox')
     options.binary_location = os.environ['GOOGLE_CHROME_BIN']
     driver = webdriver.Chrome(options=options)
