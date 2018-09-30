@@ -25,13 +25,24 @@ def send_to_slack(section, postcode):
             % (response.status_code, response.text)
         )
 
+CHROMEDRIVER_PATH = "/app/.chromedriver/bin/chromedriver"
 
-chrome_options = Options()
-chrome_options.binary_location = GOOGLE_CHROME_SHIM
+chrome_options = webdriver.ChromeOptions()
+
+chrome_options.binary_location = '.apt/usr/bin/google-chrome-stable'
 chrome_options.add_argument('--disable-gpu')
 chrome_options.add_argument('--no-sandbox')
-chrome_options.add_argument('--headless')
-driver = webdriver.Chrome(executable_path="chromedriver", options=chrome_options)
+chrome_options.add_argument('headless')
+
+browser = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, options=chrome_options)
+print('browser is ready')
+
+# chrome_options = Options()
+# chrome_options.binary_location = GOOGLE_CHROME_SHIM
+# chrome_options.add_argument('--disable-gpu')
+# chrome_options.add_argument('--no-sandbox')
+# chrome_options.add_argument('--headless')
+# driver = webdriver.Chrome(executable_path="chromedriver", options=chrome_options)
 
 # chrome_exec_shim = os.environ.get("GOOGLE_CHROME_BIN", "chromedriver")
 # opts = webdriver.ChromeOptions()
