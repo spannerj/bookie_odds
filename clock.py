@@ -23,7 +23,7 @@ def timed_job():
 
     chrome_options = webdriver.ChromeOptions()
 
-    chrome_options.binary_location = '.apt/usr/bin/google-chrome-stable'
+    chrome_options.binary_location = '/app/.apt/usr/bin/google-chrome-stable'
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('headless')
