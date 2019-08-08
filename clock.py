@@ -25,7 +25,7 @@ def safe_div(x, y):
 #     sys.stdout.write(str(datetime.datetime.now()))
 #     sys.stdout.flush()
 
-@sched.scheduled_job('cron', hour=00, minute=55)
+@sched.scheduled_job('cron', hour=01, minute=05)
 def scheduled_job():
     start = time.time()
     # find last completed week
