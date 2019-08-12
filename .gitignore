@@ -94,3 +94,5 @@ __pycache__
 .ropeproject
 
 sshots/*
+.vscode
+env
