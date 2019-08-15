@@ -99,7 +99,7 @@ def get_players():
     last_completed_week_db, latest_week_db = select_latest_week()
     last_completed_week, latest_week = get_fixtures()
     if last_completed_week_db == last_completed_week:
-        send_email('Schedule run, No updates')
+        # send_email('Schedule run, No updates')
         logging.info(' - Week not completed yet. Exit')
         process = False
 
