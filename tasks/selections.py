@@ -7,6 +7,10 @@ import os
 import psycopg2
 import logging
 import traceback
+import time
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 def connect_to_db():
@@ -26,7 +30,7 @@ def commit_and_close(connection):
 
 def get_db_hashes():
 
-    connection = connect_to_db() 
+    connection = connect_to_db()
     cursor = connection.cursor()
 
     select_sql = """
@@ -97,20 +101,22 @@ def get_selections():
         # browser.save_screenshot("screenshot.png")
         # browser.find_element_by_id('user').send_keys(os.environ['WP_USER'])
         # browser.find_element_by_id('password').send_keys('WP_PASSWORD')
+        time.sleep(2)
         browser.find_element_by_id('user_login').send_keys(os.environ['WP_USER'])
         browser.find_element_by_id('user_pass').send_keys(os.environ['WP_PASSWORD'])
-        # browser.save_screenshot("screenshot1.png")
+        browser.save_screenshot("screenshot1.png")
+        time.sleep(2)
         browser.find_element_by_name('wp-submit').click()
-        # browser.save_screenshot("screenshot2.png")
-        # import time
-        # time.sleep(2)
+        browser.save_screenshot("screenshot2.png")
+        time.sleep(2)
         browser.get('https://betracingnationclub.com/selections/')
-        # browser.save_screenshot('screenshot3.png')
+        browser.save_screenshot('screenshot3.png')
+        time.sleep(2)
         html = browser.page_source
-        
+
         # with open("page.html","w") as fp:
         #     fp.write(html)
-        soup = BeautifulSoup(html, 'html.parser')
+        # soup = BeautifulSoup(html, 'html.parser')
         # with open("page.html", "r", encoding='utf-8') as f:
         #     html = f.read()
 
