@@ -30,7 +30,7 @@ def get_db_hashes():
 
     connection = connect_to_db() 
     cursor = connection.cursor()
-    
+
     select_sql = """
                  SELECT bet_hash1,  bet_hash2, bet_hash3, bet_hash4, bet_hash5
                  FROM selections
@@ -47,7 +47,7 @@ def insert_new_hashes(bet_list):
 
     connection = connect_to_db() 
     cursor = connection.cursor()
-    
+
     insert_sql = """
                  INSERT INTO selections (bet_hash1,  bet_hash2, bet_hash3, bet_hash4, bet_hash5)
                  VALUES (%s, %s, %s, %s, %s)
@@ -56,7 +56,6 @@ def insert_new_hashes(bet_list):
     cursor.execute('DELETE FROM selections')
     cursor.execute(insert_sql, (bet_list[0], bet_list[1], bet_list[2], bet_list[3], bet_list[4],))
     commit_and_close(connection)
-
 
 
 def hash_check(hashed_bet_list, db_hashes, bet_list):
@@ -98,8 +97,8 @@ def get_selections():
         # browser.get('https://betracingnationclub.com/log-in/')
         browser.get('https://betracingnationclub.com/wp-login.php')
         # browser.save_screenshot("screenshot.png")
-        browser.find_element_by_id('user_login').send_keys('andy@channie.co.uk')
-        browser.find_element_by_id('user_pass').send_keys('N#RRRuRFjySp9LPV')
+        browser.find_element_by_id('user_login').send_keys(os.environ['WP_USER'])
+        browser.find_element_by_id('user_pass').send_keys('WP_PASSWORD')
         # browser.save_screenshot("screenshot1.png")
         browser.find_element_by_name('wp-submit').click()
         browser.get('https://betracingnationclub.com/selections/')
@@ -141,6 +140,7 @@ def get_selections():
         logging.error(e)
     finally:
         browser.quit()
+
 
 # This is present for running the file outside of the schedule for testing
 # purposes. ie. python tasks/selections.py
