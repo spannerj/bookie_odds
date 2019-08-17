@@ -104,6 +104,7 @@ def get_selections():
         browser.get('https://betracingnationclub.com/selections/')
         # browser.save_screenshot('screenshot1.png')
         html = browser.page_source
+        browser.quit()
         # with open("page.html","w") as fp:
         #     fp.write(html)
         soup = BeautifulSoup(html, 'html.parser')
@@ -138,8 +139,6 @@ def get_selections():
 
     except Exception as e:
         logging.error(e)
-    finally:
-        browser.quit()
 
 
 # This is present for running the file outside of the schedule for testing
