@@ -2,13 +2,11 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import requests
-import time
-from os import remove
 import hashlib
 import os
-import csv
 import psycopg2
 import logging
+import traceback
 
 
 def connect_to_db():
@@ -97,12 +95,17 @@ def get_selections():
         # browser.get('https://betracingnationclub.com/log-in/')
         browser.get('https://betracingnationclub.com/wp-login.php')
         # browser.save_screenshot("screenshot.png")
+        # browser.find_element_by_id('user').send_keys(os.environ['WP_USER'])
+        # browser.find_element_by_id('password').send_keys('WP_PASSWORD')
         browser.find_element_by_id('user_login').send_keys(os.environ['WP_USER'])
-        browser.find_element_by_id('user_pass').send_keys('WP_PASSWORD')
+        browser.find_element_by_id('user_pass').send_keys(os.environ['WP_PASSWORD'])
         # browser.save_screenshot("screenshot1.png")
         browser.find_element_by_name('wp-submit').click()
+        # browser.save_screenshot("screenshot2.png")
+        # import time
+        # time.sleep(2)
         browser.get('https://betracingnationclub.com/selections/')
-        # browser.save_screenshot('screenshot1.png')
+        # browser.save_screenshot('screenshot3.png')
         html = browser.page_source
         
         # with open("page.html","w") as fp:
@@ -114,7 +117,7 @@ def get_selections():
         soup = BeautifulSoup(html, 'html.parser')
         table = soup.find('table')
         table_rows = table.find_all('tr')[1:]
-
+        browser.quit()
         bet_list = []
         for tr in table_rows:
             bet = ''
@@ -124,7 +127,7 @@ def get_selections():
 
             if bet != 'None':
                 bet_list.append(bet.strip())
-        browser.quit()
+
         hashed_bet_list = []
         for bet in bet_list:
             hashed_bet = hash_it(bet)
@@ -138,6 +141,7 @@ def get_selections():
             logging.info(' - No new bets.')
 
     except Exception as e:
+        traceback.print_exc()
         logging.error(e)
 
 
