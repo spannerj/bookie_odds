@@ -104,7 +104,7 @@ def get_selections():
         browser.get('https://betracingnationclub.com/selections/')
         # browser.save_screenshot('screenshot1.png')
         html = browser.page_source
-        browser.quit()
+        
         # with open("page.html","w") as fp:
         #     fp.write(html)
         soup = BeautifulSoup(html, 'html.parser')
@@ -124,7 +124,7 @@ def get_selections():
 
             if bet != 'None':
                 bet_list.append(bet.strip())
-
+        browser.quit()
         hashed_bet_list = []
         for bet in bet_list:
             hashed_bet = hash_it(bet)
