@@ -42,8 +42,8 @@ def update_players(all_players, last_completed_week, latest_week):
 
     cur = conn.cursor()
     insert_sql = """
-                    INSERT INTO players (players, last_week, current_week)
-                    VALUES (%s, %s, %s)
+                 INSERT INTO players (players, last_week, current_week)
+                 VALUES (%s, %s, %s)
                  """
     cur.execute(insert_sql, (json.dumps(all_players),
                              last_completed_week,
