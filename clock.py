@@ -2,16 +2,14 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import logging
 from tasks.players import get_players
 from tasks.selections import get_selections
+from apscheduler.triggers.combining import AndTrigger
+from apscheduler.triggers.cron import CronTrigger
 
 logging.basicConfig(level=logging.INFO)
 sched = BlockingScheduler()
 
-from apscheduler.triggers.combining import OrTrigger
-from apscheduler.triggers.cron import CronTrigger
-
-trigger = OrTrigger([
-   CronTrigger(hour='16-23'),
-#    CronTrigger(hour='02-03'),
+trigger = AndTrigger([
+   CronTrigger(hour='8-23'),
    CronTrigger(minute='*/15')
 ])
 

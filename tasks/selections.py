@@ -10,9 +10,6 @@ import traceback
 import time
 
 
-logging.basicConfig(level=logging.INFO)
-
-
 def connect_to_db():
     try:
         pg_url = os.environ['PG_URL']
@@ -47,7 +44,7 @@ def get_db_hashes():
 
 def insert_new_hashes(bet_list):
 
-    connection = connect_to_db() 
+    connection = connect_to_db()
     cursor = connection.cursor()
 
     insert_sql = """
@@ -77,12 +74,15 @@ def hash_it(text):
 
 
 def send_message(message):
-    requests.get("https://api.telegram.org/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage?chat_id=-1001190331415&text={}".format(message))
+    url = 'https://api.telegram.org'
+    url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
+    url = url + '?chat_id=-1001190331415&text={}'
+    requests.get(url.format(message))
 
 
 def get_selections():
     try:
-        chrome_options = Options()  
+        chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument("--disable-extensions")
@@ -154,4 +154,5 @@ def get_selections():
 # This is present for running the file outside of the schedule for testing
 # purposes. ie. python tasks/selections.py
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     get_selections()

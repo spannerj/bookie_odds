@@ -160,7 +160,7 @@ def get_players():
                 else:
                     new_player['ppg6'] = round(safe_div(six_total, six_games), 2)
                 new_player['ppm6'] = round(safe_div(six_total,
-                                        float(new_player['value'])), 2)
+                                           float(new_player['value'])), 2)
                 all_players.append(new_player)
                 # break # uncomment for faster testing of a single player
 
