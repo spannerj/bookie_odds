@@ -2,8 +2,8 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import logging
 from tasks.players import get_players
 from tasks.selections import get_selections
-from apscheduler.triggers.combining import AndTrigger
-from apscheduler.triggers.cron import CronTrigger
+# from apscheduler.triggers.combining import AndTrigger
+# from apscheduler.triggers.cron import CronTrigger
 
 logging.basicConfig(level=logging.INFO)
 sched = BlockingScheduler()
@@ -20,7 +20,7 @@ def cron_get_players():
     get_players()
 
 
-@sched.scheduled_job('cron', minute='*/15', hour='8-23')
+@sched.scheduled_job('cron', minute='*/15', hour='7-22')
 def daily_get_selections():
     logging.info(' - Getting selections')
     get_selections()
