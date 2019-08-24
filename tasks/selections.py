@@ -194,6 +194,8 @@ def get_selections():
     except Exception as e:
         traceback.print_exc()
         logging.error(e)
+    finally:
+        browser.quit()
 
 
 # This is present for running the file outside of the schedule for testing
