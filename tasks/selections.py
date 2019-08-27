@@ -8,6 +8,7 @@ import psycopg2
 import logging
 import traceback
 import time
+import yagmail
 
 
 URL_DICT = {
@@ -16,6 +17,16 @@ URL_DICT = {
     "Patent": "https://betracingnationclub.com/a-petes-patent/",
     "Trebles": "https://betracingnationclub.com/a-saturday-six-trebles/"
 }
+
+
+def send_email(message, subject, email_list):
+    password = os.environ['PWORD']
+    yag = yagmail.SMTP('spencer.jago@digital.landregistry.gov.uk', password)
+    contents = [message]
+    emails = []
+    emails.append('spencer.jago@gmail.com')
+
+    yag.send(emails, subject, contents)
 
 
 def connect_to_db():
@@ -171,6 +182,7 @@ def assemble_bets(bet_type, bet_list):
 def get_selections():
     try:
         browser = login_to_site()
+        email_message = ''
         for bet_type, url in URL_DICT.items():
             bet_list = parse_table(browser, url)
 
@@ -183,6 +195,7 @@ def get_selections():
 
             if hash_check(hashed_bet_list, db_hash):
                 if message != '':
+                    email_message = email_message + message + '\n\n'
                     send_message(message)
                     insert_new_hashes(hashed_bet_list, bet_type)
                     logging.info(' - New ' + bet_type + ' bet found.')
@@ -190,6 +203,9 @@ def get_selections():
                     logging.info(' - No new ' + bet_type + ' bets.')
             else:
                 logging.info(' - No new ' + bet_type + ' bets.')
+
+        if email_message.strip() != '':
+            send_email(email_message, 'Petes selections', ['spencer.jago@gmail.com', 'andy@channie.co.uk'])
 
     except Exception as e:
         traceback.print_exc()
