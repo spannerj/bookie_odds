@@ -9,6 +9,7 @@ import logging
 import traceback
 import time
 import yagmail
+import urllib.parse
 
 
 URL_DICT = {
@@ -107,6 +108,7 @@ def hash_it(text):
 
 
 def send_message(message):
+    message = urllib.parse.quote(message)
     url = 'https://api.telegram.org'
     url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
     url = url + '?chat_id=-1001190331415&text={}'
@@ -196,6 +198,7 @@ def get_selections():
             if hash_check(hashed_bet_list, db_hash):
                 if message != '':
                     email_message = email_message + message + '\n\n'
+                    logging.info(message)
                     send_message(message)
                     insert_new_hashes(hashed_bet_list, bet_type)
                     logging.info(' - New ' + bet_type + ' bet found.')
