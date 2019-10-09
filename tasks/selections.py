@@ -20,12 +20,13 @@ URL_DICT = {
 }
 
 
-def send_email(message, subject, email_list):
+def send_email(message, subject):
     password = os.environ['PWORD']
     yag = yagmail.SMTP('spencer.jago@digital.landregistry.gov.uk', password)
     contents = [message]
     emails = []
     emails.append('spencer.jago@gmail.com')
+    emails.append('andy@channie.co.uk')
 
     yag.send(emails, subject, contents)
 
@@ -100,6 +101,7 @@ def hash_check(hashed_bet_list, db_hash):
     if hashed_bet_list != db_hash:
         changes = True
 
+    # return True
     return changes
 
 
@@ -146,11 +148,16 @@ def login_to_site():
     return browser
 
 
-def parse_table(browser, url):
+def parse_table(browser, url, bet_type):
+    add_text = ''
     browser.get(url)
     time.sleep(2)
     html = browser.page_source
     soup = BeautifulSoup(html, 'html.parser')
+    if bet_type != 'Singles':
+        add_text = soup.find_all('section')[1].find('span').text
+        add_text = '\n' + add_text + '\n'
+
     table = soup.find('table')
     table_rows = table.find_all('tr')[1:]
     bet_list = []
@@ -165,18 +172,22 @@ def parse_table(browser, url):
         else:
             bet_list.append('')
 
-    return bet_list
+    return bet_list, add_text
 
 
-def assemble_bets(bet_type, bet_list):
+def assemble_bets(bet_type, bet_list, add_text):
     message = ''
+
     for i in range(len(bet_list)):
         if bet_list[i] != '':
             if not xcheck(bet_list[i]):
                 message = message + bet_list[i] + '\n'
 
     if message.strip() != '':
-        message = bet_type + '\n' + message
+        if add_text == '':
+            message = bet_type + '\n' + message
+        else:
+            message = bet_type + add_text + '\n' + message
 
     return message
 
@@ -186,10 +197,10 @@ def get_selections():
         browser = login_to_site()
         email_message = ''
         for bet_type, url in URL_DICT.items():
-            bet_list = parse_table(browser, url)
+            bet_list, add_text = parse_table(browser, url, bet_type)
 
             bet_list = bet_list_length_check(bet_list)
-            message = assemble_bets(bet_type, bet_list)
+            message = assemble_bets(bet_type, bet_list, add_text)
 
             hashed_bet_list = hash_it(message)
 
@@ -208,7 +219,7 @@ def get_selections():
                 logging.info(' - No new ' + bet_type + ' bets.')
 
         if email_message.strip() != '':
-            send_email(email_message, 'Petes selections', ['spencer.jago@gmail.com', 'andy@channie.co.uk'])
+            send_email(email_message, 'Petes selections')
 
     except Exception as e:
         traceback.print_exc()
