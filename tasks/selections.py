@@ -212,16 +212,16 @@ def get_selections():
                 if message != '':
                     email_message = email_message + message + '\n\n'
                     logging.info(message)
-                    # send_message(message)
-                    # insert_new_hashes(hashed_bet_list, bet_type)
+                    send_message(message)
+                    insert_new_hashes(hashed_bet_list, bet_type)
                     logging.info(' - New ' + bet_type + ' bet found.')
                 else:
                     logging.info(' - No new ' + bet_type + ' bets.')
             else:
                 logging.info(' - No new ' + bet_type + ' bets.')
 
-        # if email_message.strip() != '':
-            # send_email(email_message, 'Petes selections')
+        if email_message.strip() != '':
+            send_email(email_message, 'Petes selections')
 
     except Exception as e:
         traceback.print_exc()
