@@ -2,6 +2,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import logging
 from tasks.players import get_players
 from tasks.selections import get_selections
+from tasks.mlt import get_mlt
 # from apscheduler.triggers.combining import AndTrigger
 # from apscheduler.triggers.cron import CronTrigger
 
@@ -24,6 +25,7 @@ def cron_get_players():
 def daily_get_selections():
     logging.info(' - Getting selections')
     get_selections()
+    get_mlt()
 
 
 logging.info(' - Schedule starting')
