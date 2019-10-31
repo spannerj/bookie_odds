@@ -135,20 +135,18 @@ def get_mlt():
 
         nap = get_nap(browser)
 
-        hashed_nap = hash_it(nap)
+        hashed_nap = hash_it(nap.strip())
 
         db_hash = get_db_hash()
 
         if hash_check(hashed_nap, db_hash):
             logging.info(nap)
             send_message(nap)
+            send_email(nap, 'MLT NAP')
             insert_new_hashes(hashed_nap)
             logging.info(' - New MLT NAP found.')
         else:
             logging.info(' - No new MLT NAP bets.')
-
-        if nap.strip() != '':
-            send_email(nap, 'MLT NAP')
 
     except Exception as e:
         traceback.print_exc()
