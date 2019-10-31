@@ -17,7 +17,7 @@ def send_email(message, subject):
     contents = [message]
     emails = []
     emails.append('spencer.jago@gmail.com')
-    # emails.append('andy@channie.co.uk')
+    emails.append('andy@channie.co.uk')
 
     yag.send(emails, subject, contents)
 
@@ -86,12 +86,12 @@ def hash_it(text):
 
 def send_message(message):
     message = urllib.parse.quote(message)
-    # url = 'https://api.telegram.org'
-    # url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
-    # url = url + '?chat_id=-1001190331415&text={}'
     url = 'https://api.telegram.org'
     url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
-    url = url + '?chat_id=-1001365813396&text={}'
+    url = url + '?chat_id=-1001190331415&text={}'
+    # url = 'https://api.telegram.org'
+    # url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
+    # url = url + '?chat_id=-1001365813396&text={}'
 
     requests.get(url.format(message))
 
