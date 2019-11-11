@@ -158,7 +158,13 @@ def parse_table(browser, url, bet_type):
         find_res = soup.find_all('section')[1].find('span')
         if find_res is None:
             find_res = soup.find_all('section')[1].find('strong')
-        add_text = '\n' + find_res.text + '\n'
+        try:
+            add_text = '\n' + find_res.text + '\n'
+        except:
+            print('error getting selection text')
+            with open("error.html", "w") as file:
+                file.write(str(soup))
+            add_text = '\nError getting ' + bet_type + ' selection\n'
 
     table = soup.find('table')
     table_rows = table.find_all('tr')[1:]
