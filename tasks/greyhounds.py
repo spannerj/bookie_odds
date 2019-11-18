@@ -89,7 +89,7 @@ def get_greyhounds():
     last_id = get_last_message_id()
 
     session_string = os.environ['SESSION_ID']
-
+    print(session_string)
     client = TelegramClient(StringSession(session_string),
                             864949,
                             '11ba75ff41d658954810528446facd8e')
