@@ -97,7 +97,7 @@ def get_greyhounds():
     client.connect()
 
     if not client.is_user_authorized():
-        logging.info(' - Telegram not authorised'')
+        logging.info(' - Telegram not authorised')
         print('not authorised')
 
     # set up output channel
