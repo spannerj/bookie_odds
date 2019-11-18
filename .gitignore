@@ -98,3 +98,4 @@ sshots/*
 env
 *.png
 *.html
+*.session
