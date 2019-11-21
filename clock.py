@@ -3,7 +3,6 @@ import logging
 from tasks.players import get_players
 from tasks.selections import get_selections
 from tasks.mlt import get_mlt
-from tasks.greyhounds import get_greyhounds
 # from apscheduler.triggers.combining import AndTrigger
 # from apscheduler.triggers.cron import CronTrigger
 
@@ -27,7 +26,6 @@ def daily_get_selections():
     logging.info(' - Getting selections')
     get_selections()
     get_mlt()
-    get_greyhounds()
 
 
 logging.info(' - Schedule starting')
