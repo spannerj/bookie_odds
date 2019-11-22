@@ -120,10 +120,10 @@ def get_nap(browser):
     html = browser.page_source
 
     soup = BeautifulSoup(html, 'html.parser')
-    div = soup.find_all("p", {"class": "font_7"})
+    div = soup.find_all("p")
     for item in div:
         if "NAP is" in item.text:
-            nap = item.text
+            nap = ' MLT NAP :- ' + item.text
             break
 
     return nap
