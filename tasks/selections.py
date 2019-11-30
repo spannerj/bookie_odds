@@ -1,7 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
-import requests
 import hashlib
 import os
 import psycopg2
@@ -9,7 +8,7 @@ import logging
 import traceback
 import time
 import yagmail
-import urllib.parse
+import telegram
 
 
 URL_DICT = {
@@ -110,15 +109,8 @@ def hash_it(text):
 
 
 def send_message(message):
-    message = urllib.parse.quote(message)
-    url = 'https://api.telegram.org'
-    url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
-    url = url + '?chat_id=-1001190331415&text={}'
-    # url = 'https://api.telegram.org'
-    # url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
-    # url = url + '?chat_id=-1001365813396&text={}'
-
-    requests.get(url.format(message))
+    bot = telegram.Bot(token='810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM')
+    bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
 def login_to_site():
@@ -196,9 +188,9 @@ def assemble_bets(bet_type, bet_list, add_text):
 
     if message.strip() != '':
         if add_text == '':
-            message = bet_type + '\n' + message
+            message = '`Petes Bets`' + '\n*' + bet_type + '*' + '\n' + message
         else:
-            message = bet_type + add_text + '\n' + message
+            message = '`Petes Bets`' + '\n*' + bet_type + '*' + add_text + '\n' + message
 
     return message
 

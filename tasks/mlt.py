@@ -9,6 +9,7 @@ import logging
 import traceback
 import yagmail
 import urllib.parse
+import telegram
 
 
 def send_email(message, subject):
@@ -85,15 +86,10 @@ def hash_it(text):
 
 
 def send_message(message):
-    message = urllib.parse.quote(message)
-    url = 'https://api.telegram.org'
-    url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
-    url = url + '?chat_id=-1001190331415&text={}'
-    # url = 'https://api.telegram.org'
-    # url = url + '/bot810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM/sendMessage'
-    # url = url + '?chat_id=-1001365813396&text={}'
+    bot = telegram.Bot(token='810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM')
 
-    requests.get(url.format(message))
+    # bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN) #  Monitor Test
+    bot.send_message(chat_id='-1001190331415', text=message, parse_mode=telegram.ParseMode.MARKDOWN)  # Monitor
 
 
 def set_up():
@@ -123,7 +119,7 @@ def get_nap(browser):
     div = soup.find_all("p")
     for item in div:
         if "NAP is" in item.text:
-            nap = ' MLT NAP :- ' + item.text
+            nap = item.text
             break
 
     return nap
@@ -141,6 +137,7 @@ def get_mlt():
 
         if hash_check(hashed_nap, db_hash):
             logging.info(nap)
+            nap = '`MLT NAP`' + '\n' + nap
             send_message(nap)
             send_email(nap, 'MLT NAP')
             insert_new_hashes(hashed_nap)
