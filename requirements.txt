@@ -6,3 +6,4 @@ beautifulsoup4==4.7.1
 requests==2.22.0
 selenium==3.141.0
 telethon==1.10.8
+telegram==0.0.1
