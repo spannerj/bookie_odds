@@ -110,6 +110,7 @@ def hash_it(text):
 
 def send_message(message):
     bot = telegram.Bot(token='810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM')
+    # bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN) #  Monitor Test
     bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
@@ -214,7 +215,7 @@ def get_selections():
                     email_message = email_message + message + '\n\n'
                     logging.info(message)
                     send_message(message)
-                    insert_new_hashes(hashed_bet_list, bet_type)
+                    # insert_new_hashes(hashed_bet_list, bet_type)
                     logging.info(' - New ' + bet_type + ' bet found.')
                 else:
                     logging.info(' - No new ' + bet_type + ' bets.')
