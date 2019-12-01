@@ -21,7 +21,7 @@ def cron_get_players():
     get_players()
 
 
-@sched.scheduled_job('cron', minute='*/15', hour='7-22')
+@sched.scheduled_job('cron', minute='*/10', hour='7-23')
 def daily_get_selections():
     logging.info(' - Getting selections')
     get_selections()
