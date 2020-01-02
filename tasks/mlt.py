@@ -85,7 +85,7 @@ def hash_it(text):
     return hashlib.sha224(text.encode('utf-8')).hexdigest()
 
 
-def send_message(message, channel):
+def send_message(message):
     bot = telegram.Bot(token='810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM')
     bot.send_message(chat_id='-1001412585686', text=message, parse_mode=telegram.ParseMode.MARKDOWN) # LR MLT Tips
     # bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN) #  Monitor Test
@@ -139,8 +139,8 @@ def get_mlt():
             logging.info(nap)
             nap = '`MLT NAP`' + '\n' + nap
             send_message(nap)
-            # send_email(nap, 'MLT NAP')
-            # insert_new_hashes(hashed_nap)
+            send_email(nap, 'MLT NAP')
+            insert_new_hashes(hashed_nap)
             logging.info(' - New MLT NAP found.')
         else:
             logging.info(' - No new MLT NAP bets.')
