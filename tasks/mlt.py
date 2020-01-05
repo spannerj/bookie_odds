@@ -1,14 +1,12 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
-import requests
 import hashlib
 import os
 import psycopg2
 import logging
 import traceback
 import yagmail
-import urllib.parse
 import telegram
 
 
@@ -86,7 +84,8 @@ def hash_it(text):
 
 
 def send_message(message):
-    bot = telegram.Bot(token='810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM')
+    token = os.environ['TELEGRAM_BOT']
+    bot = telegram.Bot(token=token)
     bot.send_message(chat_id='-1001412585686', text=message, parse_mode=telegram.ParseMode.MARKDOWN) # LR MLT Tips
     # bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN) #  Monitor Test
     # bot.send_message(chat_id='-1001190331415', text=message, parse_mode=telegram.ParseMode.MARKDOWN)  # Monitor

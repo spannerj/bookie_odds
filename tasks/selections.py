@@ -109,7 +109,8 @@ def hash_it(text):
 
 
 def send_message(message):
-    bot = telegram.Bot(token='810436987:AAESEw086nXGtqt_w9r09-By-5W2bt4fqbM')
+    token = os.environ['TELEGRAM_BOT']
+    bot = telegram.Bot(token=token)
     # bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN) #  Monitor Test
     # bot.send_message(chat_id='-1001190331415', text=message, parse_mode=telegram.ParseMode.MARKDOWN) # Monitor
     bot.send_message(chat_id='-1001466483402', text=message, parse_mode=telegram.ParseMode.MARKDOWN) # LR Pete's Tips
