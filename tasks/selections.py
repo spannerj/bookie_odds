@@ -111,6 +111,8 @@ def hash_it(text):
 def send_message(message):
     token = os.environ['TELEGRAM_BOT']
     bot = telegram.Bot(token=token)
+    print (message)
+    message = message.replace('*', '')
     # bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN) #  Monitor Test
     # bot.send_message(chat_id='-1001190331415', text=message, parse_mode=telegram.ParseMode.MARKDOWN) # Monitor
     bot.send_message(chat_id='-1001466483402', text=message, parse_mode=telegram.ParseMode.MARKDOWN) # LR Pete's Tips
@@ -191,9 +193,9 @@ def assemble_bets(bet_type, bet_list, add_text):
 
     if message.strip() != '':
         if add_text == '':
-            message = '`Petes Bets`' + '\n*' + bet_type + '*' + '\n' + message
+            message = bet_type + '\n' + message
         else:
-            message = '`Petes Bets`' + '\n*' + bet_type + '*' + add_text + '\n' + message
+            message = bet_type + add_text + '\n' + message
 
     return message
 

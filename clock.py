@@ -25,7 +25,7 @@ def cron_get_players():
 def daily_get_selections():
     logging.info(' - Getting selections')
     get_selections()
-    get_mlt()
+    # get_mlt()
 
 
 logging.info(' - Schedule starting')
