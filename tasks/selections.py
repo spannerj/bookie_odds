@@ -13,7 +13,8 @@ import telegram
 
 URL_DICT = {
     "Double": "https://betracingnationclub.com/daily-double/",
-    "Singles": "https://betracingnationclub.com/selections/",
+    # "Singles": "https://betracingnationclub.com/selections/",
+    "Singles": "https://betracingnationclub.com/a-selections-today/",
     "Patent": "https://betracingnationclub.com/a-petes-patent/",
     "Trebles": "https://betracingnationclub.com/a-saturday-six-trebles/"
 }
