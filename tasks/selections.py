@@ -112,7 +112,7 @@ def hash_it(text):
 def send_message(message):
     token = os.environ['TELEGRAM_BOT']
     bot = telegram.Bot(token=token)
-    print (message)
+    print(message)
     message = message.replace('*', '')
     # bot.send_message(chat_id='-1001365813396', text=message, parse_mode=telegram.ParseMode.MARKDOWN) #  Monitor Test
     # bot.send_message(chat_id='-1001190331415', text=message, parse_mode=telegram.ParseMode.MARKDOWN) # Monitor
@@ -137,11 +137,22 @@ def login_to_site():
     # browser.get('https://betracingnationclub.com/log-in/')
     browser.get('https://betracingnationclub.com/wp-login.php')
     time.sleep(1)
-    browser.find_element_by_id('user_login').send_keys(os.environ['WP_USER'])
-    browser.find_element_by_id('user_pass').send_keys(os.environ['WP_PASSWORD'])
-    time.sleep(1)
-    browser.find_element_by_name('wp-submit').click()
-    time.sleep(1)
+    try:
+        browser.find_element_by_id('user_login').send_keys(os.environ['WP_USER'])
+        browser.find_element_by_id('user_pass').send_keys(os.environ['WP_PASSWORD'])
+        time.sleep(1)
+        browser.find_element_by_name('wp-submit').click()
+        time.sleep(1)
+    except Exception as e:
+        browser.save_screenshot('login_error.png')
+        password = os.environ['PWORD']
+        yag = yagmail.SMTP('spencer.jago@digital.landregistry.gov.uk', password)
+        contents = ['Error', 'login_error.png']
+        emails = []
+        emails.append('spencer.jago@gmail.com')
+
+        yag.send(emails, 'Pete error', contents)
+        print(e)
 
     return browser
 
