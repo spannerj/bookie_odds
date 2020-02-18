@@ -144,14 +144,14 @@ def login_to_site():
         browser.find_element_by_name('wp-submit').click()
         time.sleep(1)
     except Exception as e:
-        browser.save_screenshot('login_error.png')
-        password = os.environ['PWORD']
-        yag = yagmail.SMTP('spencer.jago@digital.landregistry.gov.uk', password)
-        contents = ['Error', 'login_error.png']
-        emails = []
-        emails.append('spencer.jago@gmail.com')
+        # browser.save_screenshot('login_error.png')
+        # password = os.environ['PWORD']
+        # yag = yagmail.SMTP('spencer.jago@digital.landregistry.gov.uk', password)
+        # contents = ['Error', 'login_error.png']
+        # emails = []
+        # emails.append('spencer.jago@gmail.com')
 
-        yag.send(emails, 'Pete error', contents)
+        # yag.send(emails, 'Pete error', contents)
         print(e)
 
     return browser
