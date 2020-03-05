@@ -11,12 +11,19 @@ import yagmail
 import telegram
 
 
+# URL_DICT = {
+#     "Double": "https://betracingnationclub.com/daily-double/",
+#     # "Singles": "https://betracingnationclub.com/selections/",
+#     "Singles": "https://betracingnationclub.com/all-selections-today/",
+#     "Patent": "https://betracingnationclub.com/a-petes-patent/",
+#     "Trebles": "https://betracingnationclub.com/a-saturday-six-trebles/"
+# }
 URL_DICT = {
-    "Double": "https://betracingnationclub.com/daily-double/",
+    "Double": "https://betracingnationclub.com/all-selections-today/",
     # "Singles": "https://betracingnationclub.com/selections/",
-    "Singles": "https://betracingnationclub.com/a-selections-today/",
-    "Patent": "https://betracingnationclub.com/a-petes-patent/",
-    "Trebles": "https://betracingnationclub.com/a-saturday-six-trebles/"
+    "Singles": "https://betracingnationclub.com/all-selections-today/",
+    # "Patent": "https://betracingnationclub.com/a-petes-patent/",
+    "Trebles": "https://betracingnationclub.com/all-selections-today/"
 }
 
 
@@ -163,22 +170,43 @@ def parse_table(browser, url, bet_type):
     time.sleep(2)
     html = browser.page_source
     soup = BeautifulSoup(html, 'html.parser')
-    if bet_type != 'Singles':
-        find_res = soup.find_all('section')[1].find('span')
-        if find_res is None:
-            find_res = soup.find_all('section')[1].find('strong')
-            if find_res is None:
-                find_res = soup.find_all('section')[1].find('p')
+    # if bet_type != 'Singles':
+    #     find_res = soup.find_all('section')[1].find('span')
+    #     if find_res is None:
+    #         find_res = soup.find_all('section')[1].find('strong')
+    #         if find_res is None:
+    #             find_res = soup.find_all('section')[1].find('p')
 
+    #     try:
+    #         add_text = '\n' + find_res.text + '\n'
+    #     except:
+    #         print('error getting selection text')
+    #         with open("error.html", "w") as file:
+    #             file.write(str(soup))
+    #         add_text = '\nError getting ' + bet_type + ' selection\n'
+
+    tables = soup.find_all('table')
+
+    if bet_type == 'Singles':
+        print('Single')
+        table = tables[0]
+    elif bet_type == 'Double':
+        print('Double')
+        find_res = soup.find_all("h2", class_='elementor-heading-title')
+        # print(find_res[4].text)
         try:
-            add_text = '\n' + find_res.text + '\n'
+            add_text = '\n' + find_res[4].text + '\n'
         except:
             print('error getting selection text')
             with open("error.html", "w") as file:
                 file.write(str(soup))
             add_text = '\nError getting ' + bet_type + ' selection\n'
 
-    table = soup.find('table')
+        table = tables[1]
+    elif bet_type == 'Trebles':
+        print('Trebles')
+        table = tables[2]
+
     table_rows = table.find_all('tr')[1:]
     bet_list = []
     for tr in table_rows:
