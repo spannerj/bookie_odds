@@ -40,7 +40,6 @@ def commit_and_close(connection):
 
 
 def get_stadiums():
-
     connection = connect_to_db()
     cursor = connection.cursor()
 
@@ -105,18 +104,19 @@ def get_prices():
 
     try:
         # driver = webdriver.Firefox(firefox_options=browser_options)
-        driver = webdriver.Chrome(chrome_options=browser_options, executable_path=ChromeDriverManager().install())
+        driver = webdriver.Chrome(options=browser_options, executable_path=ChromeDriverManager().install())
         # driver = webdriver.Firefox(executable_path='/home/spanner/.wdm/drivers/geckodriver/linux32/v0.26.0/geckodriver',
         #                            browser_options=browser_options)
 
         url = "https://www.bet365.com/#/AS/B4/"
         driver.get(url)
         try:
-            element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsl-RaceMeeting rsl-RaceMeeting_Uk'))
+            element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsl-RaceMeeting_Uk'))
             WebDriverWait(driver, 10).until(element_present)
-        except Exception:
-            logging.error('Page load error')
-            # print(str(e))
+        except Exception as e:
+            # pass
+            # logging.error('Page load error')
+            logging.error(str(e))
 
         soup = BeautifulSoup(driver.page_source, 'html.parser')
         driver.quit()
@@ -133,7 +133,6 @@ def get_prices():
             races[race] = early
 
         stadiums = get_stadiums()
-
         for race, early in races.items():
             if early is not None:
                 if not alert_sent(stadiums, race):
