@@ -1,6 +1,10 @@
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
+from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.firefox.options import Options
+from bs4 import BeautifulSoup
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 import yagmail
 import os
@@ -11,7 +15,7 @@ from datetime import datetime, date
 
 
 def send_email(message, subject):
-    password = 'kwgapxywzylakeki'
+    password = os.environ('PWORD')
     yag = yagmail.SMTP('spencer.jago@digital.landregistry.gov.uk', password)
     contents = [message]
     emails = []
@@ -52,23 +56,23 @@ def get_stadiums():
     return result
 
 
-def update_date(meeting):
+def insert_race(meeting):
     connection = connect_to_db()
     cursor = connection.cursor()
 
-    update_sql = """
-                 UPDATE greyhounds
-                 SET date_updated = current_date
-                 where stadium = %s;
+    insert_sql = """
+                 INSERT INTO greyhounds (stadium)
+                 VALUES(%s);
                  """
     try:
-        cursor.execute(update_sql, (meeting,))
+        cursor.execute(insert_sql, (meeting,))
     except Exception as e:
         logging.error(e)
     commit_and_close(connection)
 
 
 def send_message(message, channel):
+    logging.info('Sending Telegram message')
     token = os.environ['TELEGRAM_BOT']
     bot = telegram.Bot(token=token)
     message = message.replace('*', '')
@@ -80,77 +84,62 @@ def send_message(message, channel):
 
 
 def get_prices():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--disable-extensions")
-    chrome_options.add_argument('--ignore-certificate-errors')
-    chrome_options.add_argument("--start-maximized")
-    # chrome_options.add_argument("--proxy-server='direct://'")
-    # chrome_options.add_argument("--proxy-bypass-list=*")
-    # chrome_options.add_argument('--disable-gpu')
-    # chrome_options.add_argument('--disable-dev-shm-usage')
-    # chrome_options.add_argument('--no-sandbox')
-
-    # loop_ct = 1
+    firefox_options = Options()
+    firefox_options.binary_location = '/usr/bin/firefox'
+    firefox_options.add_argument("--window-size=1920,1080")
+    firefox_options.add_argument("--disable-extensions")
+    firefox_options.add_argument('--ignore-certificate-errors')
+    firefox_options.add_argument("--start-maximized")
 
     try:
-        driver = webdriver.Chrome(ChromeDriverManager().install(),
-                                  options=chrome_options)
+        driver = webdriver.Firefox(executable_path='/home/spanner/.wdm/drivers/geckodriver/linux32/v0.26.0/geckodriver',
+                                   firefox_options=firefox_options)
 
-    # while True:
-        meetings = []
+        url = "https://www.bet365.com/#/AS/B4/"
+        driver.get(url)
+        try:
+            element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "rsl-RaceMeeting rsl-RaceMeeting_Uk")))
+        except Exception as e:
+            print(e)
+
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        driver.quit()
+
+        races = {}
+
+        mydivs = soup.find_all("div", class_= "rsl-RaceMeeting_Uk")
+        for div in mydivs:
+            race = div.find("div", class_="rsl-MeetingHeader_RaceName").get_text()
+            early = div.find("div", class_="rsl-RaceMeeting_FixedWinPriceAvailable")
+            if early is not None:
+                early = early.get_text()
+
+            races[race] = early
+
         stadiums = get_stadiums()
-        for stadium in stadiums:
-            if (stadium[1] is None) or (stadium[1].date() < datetime.today().date()):
-                meetings.append(stadium[0])
 
-        for meeting in meetings:
-            driver.get('https://www.oddschecker.com/greyhounds/{}'.format(meeting))
+        for race, early in races.items():
+            print(race + ' - ' + str(early))
+            if early is not None:
+                alert_sent = False
+                for stadium in stadiums:
+                    if stadium[0] == race:
+                        alert_sent = True
 
-            if meeting in driver.current_url:
-                logging.info('on the right page - {}'.format(driver.current_url))
-
-                try:
-                    driver.find_element_by_xpath('//*[@id="promo-modal"]/div[1]/div/span').click()
-                except Exception:
-                    pass
-
-                time.sleep(1)
-                elements = driver.find_elements_by_css_selector("div.fixture a")
-                driver.get(elements[0].get_attribute("href"))
-                elements = driver.find_elements_by_css_selector("td[data-bk='B3']")
-
-                prices_found = True
-                for element in elements[3:]:
-                    if element.text != '':
-                        if element.text == 'SP':
-                            # starting price found so break
-                            prices_found = False
-                            break
-
-                if prices_found:
-                    send_email('priced up', meeting)
-                    send_message('{} priced up!'.format(meeting), 'Alert')
-                    update_date(meeting)
-                    logging.info('Priced up {}'.format(meeting))
-
-        # loop_ct = loop_ct + 1
-        # if loop_ct == 30:
-        #     send_email('ZZZZZZZZZ', 'Sleeping')
-        #     loop_ct = 1
-        # logging.info('sleeping - {}'.format(str(loop_ct)))
-        # time.sleep(60)
+                if not alert_sent:
+                    # send_email('priced up', race)
+                    send_message('{} priced up!'.format(race), 'Alert')
+                    insert_race(race)
+                    logging.info('Priced up {}'.format(race))
 
     except Exception as e:
         driver.save_screenshot('error.png')
         send_message('Dog prices error - '.format(str(e)), 'Error')
         send_email(str(e), 'Dog prices error')
-        print(e)
+        logging.error(str(e))
 
     finally:
-        print('Finished')
-        driver.quit()
+        logging.info('Finished')
 
 
 # This is present for running the file outside of the schedule for testing

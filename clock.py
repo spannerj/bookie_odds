@@ -1,9 +1,10 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 import logging
-from tasks.players import get_players
-from tasks.selections import get_selections
+# from tasks.players import get_players
+# from tasks.selections import get_selections
 # from tasks.mlt import get_mlt
 from tasks.greyhounds import get_prices
+from tasks.greyhounds_delete import reset_db
 # from apscheduler.triggers.combining import AndTrigger
 # from apscheduler.triggers.cron import CronTrigger
 
@@ -28,6 +29,10 @@ sched = BlockingScheduler()
 #     get_selections()
 #     # get_mlt()
 
+@sched.scheduled_job('cron', minute='59', hour='06')
+def daily_delete_greyhounds():
+    logging.info(' - Clearing greyhounds database')
+    reset_db()
 
 @sched.scheduled_job('cron', minute='*')
 # @sched.scheduled_job('cron', minute='*', hour='7-7')
