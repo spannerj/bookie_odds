@@ -2,7 +2,8 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import logging
 from tasks.players import get_players
 from tasks.selections import get_selections
-from tasks.mlt import get_mlt
+# from tasks.mlt import get_mlt
+from tasks.greyhounds import get_prices
 # from apscheduler.triggers.combining import AndTrigger
 # from apscheduler.triggers.cron import CronTrigger
 
@@ -15,17 +16,24 @@ sched = BlockingScheduler()
 # ])
 
 
-@sched.scheduled_job('cron', minute='59', hour='23', month='1-5,8-12')
-def cron_get_players():
-    logging.info(' - Getting players')
-    get_players()
+# @sched.scheduled_job('cron', minute='59', hour='23', month='1-5,8-12')
+# def cron_get_players():
+#     logging.info(' - Getting players')
+#     get_players()
 
 
-@sched.scheduled_job('cron', minute='*/10', hour='7-23')
-def daily_get_selections():
-    logging.info(' - Getting selections')
-    get_selections()
-    # get_mlt()
+# @sched.scheduled_job('cron', minute='*/10', hour='7-23')
+# def daily_get_selections():
+#     logging.info(' - Getting selections')
+#     get_selections()
+#     # get_mlt()
+
+
+@sched.scheduled_job('cron', minute='*')
+# @sched.scheduled_job('cron', minute='*', hour='7-7')
+def daily_get_greyhounds():
+    logging.info(' - Getting greyhounds')
+    get_prices()
 
 
 logging.info(' - Schedule starting')
