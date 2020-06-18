@@ -29,13 +29,13 @@ sched = BlockingScheduler()
 #     get_selections()
 #     # get_mlt()
 
-@sched.scheduled_job('cron', minute='6', hour='59')
+@sched.scheduled_job('cron', minute='59', hour='6')
 def daily_delete_greyhounds():
     logging.info(' - Clearing greyhounds database')
     reset_db()
 
 # @sched.scheduled_job('cron', minute='*')
-@sched.scheduled_job('cron', minute='*', hour='7-7')
+@sched.scheduled_job('cron', minute='*', hour='7-19')
 def daily_get_greyhounds():
     logging.info(' - Getting greyhounds')
     get_prices()

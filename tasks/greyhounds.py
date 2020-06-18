@@ -1,8 +1,8 @@
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
-# from webdriver_manager.firefox import GeckoDriverManager
-# from selenium.webdriver.firefox.options import Options
+# from webdriver_manager.chrome import ChromeDriverManager
+# from selenium.webdriver.chrome.options import Options
+from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.firefox.options import Options
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -75,13 +75,14 @@ def send_message(message, channel):
     token = os.environ['TELEGRAM_BOT']
     bot = telegram.Bot(token=token)
     message = message.replace('*', '')
+    # if channel == 'TEST':
     if channel == 'Alert':
         bot.send_message(chat_id='-1001229649531',
-                         text=message, 
+                         text=message,
                          parse_mode=telegram.ParseMode.MARKDOWN)  # Greyhound Alerts
     else:
         bot.send_message(chat_id='-1001365813396',
-                         text=message, 
+                         text=message,
                          parse_mode=telegram.ParseMode.MARKDOWN)  # Monitor Test
 
 
@@ -104,42 +105,42 @@ def get_prices():
 
     try:
         # driver = webdriver.Firefox(firefox_options=browser_options)
-        driver = webdriver.Chrome(options=browser_options, executable_path=ChromeDriverManager().install())
-        # driver = webdriver.Firefox(executable_path='/home/spanner/.wdm/drivers/geckodriver/linux32/v0.26.0/geckodriver',
-        #                            browser_options=browser_options)
+        # driver = webdriver.Chrome(options=browser_options, executable_path=ChromeDriverManager().install())
+        with webdriver.Firefox(executable_path='/home/spanner/.wdm/drivers/geckodriver/linux32/v0.26.0/geckodriver',
+                               options=browser_options):
 
-        url = "https://www.bet365.com/#/AS/B4/"
-        driver.get(url)
-        try:
-            element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsl-RaceMeeting_Uk'))
-            WebDriverWait(driver, 10).until(element_present)
-        except Exception as e:
-            # pass
-            # logging.error('Page load error')
-            logging.error(str(e))
+            url = "https://www.bet365.com/#/AS/B4/"
+            driver.get(url)
+            try:
+                element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsl-RaceMeeting_Uk'))
+                WebDriverWait(driver, 10).until(element_present)
+            except Exception as e:
+                # pass
+                # logging.error('Page load error')
+                logging.error(str(e))
 
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        driver.quit()
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            driver.quit()
 
-        races = {}
+            races = {}
 
-        meetings = soup.find_all("div", class_="rsl-RaceMeeting_Uk")
-        for meet in meetings:
-            race = meet.find("div", class_="rsl-MeetingHeader_RaceName").get_text()
-            early = meet.find("div", class_="rsl-RaceMeeting_FixedWinPriceAvailable")
-            if early is not None:
-                early = early.get_text()
+            meetings = soup.find_all("div", class_="rsl-RaceMeeting_Uk")
+            for meet in meetings:
+                race = meet.find("div", class_="rsl-MeetingHeader_RaceName").get_text()
+                early = meet.find("div", class_="rsl-RaceMeeting_FixedWinPriceAvailable")
+                if early is not None:
+                    early = early.get_text()
 
-            races[race] = early
+                races[race] = early
 
-        stadiums = get_stadiums()
-        for race, early in races.items():
-            if early is not None:
-                if not alert_sent(stadiums, race):
-                    # send_email('priced up', race)
-                    send_message('{} priced up!'.format(race), 'Alert')
-                    insert_race(race)
-                    logging.info('Priced up {}'.format(race))
+            stadiums = get_stadiums()
+            for race, early in races.items():
+                if early is not None:
+                    if not alert_sent(stadiums, race):
+                        # send_email('priced up', race)
+                        send_message('{} priced up!'.format(race), 'Alert')
+                        insert_race(race)
+                        logging.info('Priced up {}'.format(race))
 
     except Exception as e:
         send_message('Dog prices error - {}'.format(str(e)), 'Error')
