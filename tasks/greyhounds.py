@@ -1,7 +1,5 @@
 from selenium import webdriver
-# from webdriver_manager.chrome import ChromeDriverManager
-# from selenium.webdriver.chrome.options import Options
-from webdriver_manager.firefox import GeckoDriverManager
+# from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.firefox.options import Options
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
@@ -12,6 +10,8 @@ import os
 import psycopg2
 import telegram
 import logging
+import requests
+logging.getLogger(requests.packages.urllib3.__package__).setLevel(logging.ERROR)
 
 
 def send_email(message, subject):
@@ -70,20 +70,20 @@ def insert_race(meeting):
     commit_and_close(connection)
 
 
-def send_message(message, channel):
+def send_message(message, test_mode):
     logging.info('Sending Telegram message')
     token = os.environ['TELEGRAM_BOT']
     bot = telegram.Bot(token=token)
     message = message.replace('*', '')
     # if channel == 'TEST':
-    if channel == 'Alert':
-        bot.send_message(chat_id='-1001229649531',
-                         text=message,
-                         parse_mode=telegram.ParseMode.MARKDOWN)  # Greyhound Alerts
-    else:
+    if test_mode:
         bot.send_message(chat_id='-1001365813396',
                          text=message,
                          parse_mode=telegram.ParseMode.MARKDOWN)  # Monitor Test
+    else:
+        bot.send_message(chat_id='-1001229649531',
+                         text=message,
+                         parse_mode=telegram.ParseMode.MARKDOWN)  # Greyhound Alerts
 
 
 def alert_sent(stadiums, race):
@@ -95,19 +95,20 @@ def alert_sent(stadiums, race):
     return alerted
 
 
-def get_prices():
+def get_prices(test_mode):
     browser_options = Options()
-    # browser_options.binary_location = '/usr/local/bin/geckodriver'
     browser_options.add_argument("--window-size=1920,1080")
     browser_options.add_argument("--disable-extensions")
     browser_options.add_argument('--ignore-certificate-errors')
     browser_options.add_argument("--start-maximized")
 
     try:
-        # driver = webdriver.Firefox(firefox_options=browser_options)
-        # driver = webdriver.Chrome(options=browser_options, executable_path=ChromeDriverManager().install())
-        with webdriver.Firefox(executable_path='/home/spanner/.wdm/drivers/geckodriver/linux32/v0.26.0/geckodriver',
-                               options=browser_options):
+        if test_mode:
+            path = '/usr/local/bin/geckodriver'
+        else:
+            path = '/home/spanner/.wdm/drivers/geckodriver/linux32/v0.26.0/geckodriver'
+
+        with webdriver.Firefox(executable_path=path, options=browser_options) as driver:
 
             url = "https://www.bet365.com/#/AS/B4/"
             driver.get(url)
@@ -115,44 +116,82 @@ def get_prices():
                 element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsl-RaceMeeting_Uk'))
                 WebDriverWait(driver, 10).until(element_present)
             except Exception as e:
-                # pass
-                # logging.error('Page load error')
                 logging.error(str(e))
 
             soup = BeautifulSoup(driver.page_source, 'html.parser')
-            driver.quit()
+            # driver.quit()
 
             races = {}
 
-            meetings = soup.find_all("div", class_="rsl-RaceMeeting_Uk")
-            for meet in meetings:
-                race = meet.find("div", class_="rsl-MeetingHeader_RaceName").get_text()
-                early = meet.find("div", class_="rsl-RaceMeeting_FixedWinPriceAvailable")
-                if early is not None:
-                    early = early.get_text()
+            meetings = driver.find_elements_by_class_name("rsl-RaceMeeting_Uk")
+            num = len(meetings)
+            print(num)
+            for i in range(num):
+                race = driver.find_elements_by_class_name("rsl-RaceMeeting_Uk")[i].find_element_by_class_name("rsl-MeetingHeader_RaceName").text
+                early = len(driver.find_elements_by_class_name("rsl-RaceMeeting_Uk")[i].find_elements_by_class_name("rsl-RaceMeeting_FixedWinPriceAvailable")) != 0
+                driver.find_elements_by_class_name("rsl-RaceMeeting_Uk")[i].find_element_by_class_name("rsl-UkRacingCouponLink_RaceNameTime").click()
+                url = driver.current_url
+                print(url)
+                print(race)
+                print(early)
+                driver.execute_script("window.history.go(-1)")
+                import time
+                time.sleep(0.5)
 
-                races[race] = early
+            # meetings = soup.find_all("div", class_="rsl-RaceMeeting_Uk")
+            # for meet in meetings:
+            #     race = meet.find("div", class_="rsl-MeetingHeader_RaceName").get_text()
+            #     early = meet.find("div", class_="rsl-RaceMeeting_FixedWinPriceAvailable")
+            #     first_race_time = meet.find("div", class_="rsl-UkRacingCouponLink_RaceNameTime").get_text()
+            #     driver.find_element_by_class_name("rsl-UkRacingCouponLink_RaceNameTime").click()
+            #     url = driver.current_url
+            #     print(url)
+            #     driver.save_screenshot('screenie.png')
+            #     print(first_race_time)
+            #     print('*')
 
-            stadiums = get_stadiums()
-            for race, early in races.items():
-                if early is not None:
-                    if not alert_sent(stadiums, race):
-                        # send_email('priced up', race)
-                        send_message('{} priced up!'.format(race), 'Alert')
-                        insert_race(race)
-                        logging.info('Priced up {}'.format(race))
+            #     if early is not None:
+            #         early = early.get_text()
+
+            #     races[race] = early
+            #     driver.execute_script("window.history.go(-1)")
+
+            driver.quit()
+
+            # stadiums = get_stadiums()
+
+            # print(races)
+            # print(stadiums)
+
+            # for race, early in races.items():
+            #     if early is not None:
+            #         if not alert_sent(stadiums, race):
+            #             # send_email('priced up', race)
+            #             send_message('{} priced up!'.format(race), test_mode)
+            #             insert_race(race)
+            #             logging.info('Priced up {}'.format(race))
 
     except Exception as e:
-        send_message('Dog prices error - {}'.format(str(e)), 'Error')
+        # send_message('Dog prices error - {}'.format(str(e)), True)
         # send_email(str(e), 'Dog prices error')
         logging.error(str(e))
 
     finally:
-        logging.info('Finished')
+        logging.debug('Finished')
+        driver.quit()
 
 
 # This is present for running the file outside of the schedule for testing
 # purposes. ie. python tasks/selections.py
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    get_prices()
+    test_mode = False
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--test", action="store_true", help="run in test mode")
+    args = parser.parse_args()
+    if args.test:
+        print("running in test mode")
+        test_mode = True
+
+    get_prices(test_mode)
