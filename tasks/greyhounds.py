@@ -1,6 +1,6 @@
 from selenium import webdriver
 # from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -11,6 +11,7 @@ import psycopg2
 import telegram
 import logging
 import requests
+import argparse
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(logging.ERROR)
 
 
@@ -102,21 +103,56 @@ def get_prices(test_mode):
     browser_options.add_argument('--ignore-certificate-errors')
     browser_options.add_argument("--start-maximized")
 
+    # browser_options.add_argument('--headless')
+    # ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36'
+    ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Brave Chrome/81.0.4044.138 Safari/537.36'
+    browser_options.add_argument('user-agent={}'.format(ua))
+    browser_options.add_argument('--lang=en-GB')
+
+    from selenium.webdriver.common.proxy import Proxy, ProxyType
+
+
     try:
-        if test_mode:
-            path = '/usr/local/bin/geckodriver'
-        else:
-            path = '/home/spanner/.wdm/drivers/geckodriver/linux32/v0.26.0/geckodriver'
+        # if test_mode:
+        #     path = '/usr/local/bin/geckodriver'
+        # else:
+        #     path = '/home/spanner/.wdm/drivers/geckodriver/linux32/v0.26.0/geckodriver'
+        from http_request_randomizer.requests.proxy.requestProxy import RequestProxy
+        req_proxy = RequestProxy() #you may get different number of proxy when  you run this at each time
+        proxies = req_proxy.get_proxy_list() #this will create proxy list
+        ind = [] #int is list of Indian proxy
 
-        with webdriver.Firefox(executable_path=path, options=browser_options) as driver:
+        for proxy in proxies:
+            if proxy.country == 'United Kingdom':
+                ind.append(proxy)
 
-            url = "https://www.bet365.com/#/AS/B4/"
+        PROXY = 'https://' + ind[0].get_address()
+        print('^^^^^^^^^^^^^^^')
+        print(PROXY)
+
+        webdriver.DesiredCapabilities.CHROME['proxy'] = {
+            "httpProxy": PROXY,
+            "ftpProxy": PROXY,
+            "sslProxy": PROXY,
+            "proxyType": "MANUAL",
+
+        }
+
+        with webdriver.Chrome(options=browser_options) as driver:
+            driver.get('https://www.expressvpn.com/what-is-my-ip')
+            driver.save_screenshot('ip.png')
+            # url = "https://www.bbc.co.uk/"
+            # url = "https://www.bet365.com"
             driver.get(url)
+            import time
+            time.sleep(2)
+            driver.save_screenshot('z.png')
             try:
                 element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsl-RaceMeeting_Uk'))
                 WebDriverWait(driver, 10).until(element_present)
             except Exception as e:
                 logging.error(str(e))
+            driver.save_screenshot('zz.png')
 
             soup = BeautifulSoup(driver.page_source, 'html.parser')
             # driver.quit()
@@ -181,12 +217,23 @@ def get_prices(test_mode):
         driver.quit()
 
 
+def test():
+    # url = "https://www.bbc.co.uk/"
+    url = "https://www.bet365.com/#/AC/B4/C101/D20200621/E20700454/F90330670/P10/"
+    page = requests.get(url)
+    import time
+    time.sleep(3)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    print(soup.prettify())
+
 # This is present for running the file outside of the schedule for testing
 # purposes. ie. python tasks/selections.py
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+    logging.basicConfig(level=LOGLEVEL)
     test_mode = False
-    import argparse
+
+    logging.debug('Started')
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--test", action="store_true", help="run in test mode")
     args = parser.parse_args()
@@ -195,3 +242,4 @@ if __name__ == '__main__':
         test_mode = True
 
     get_prices(test_mode)
+    # test()
