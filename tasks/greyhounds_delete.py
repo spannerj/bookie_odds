@@ -24,7 +24,7 @@ def clear_db():
     cursor = connection.cursor()
 
     delete_sql = """
-                 DELETE FROM greyhounds
+                 DELETE FROM b365_early_prices
                  """
 
     result = cursor.execute(delete_sql)
@@ -41,7 +41,6 @@ def reset_db():
 
     finally:
         logging.info('Database cleared')
-
 
 
 # This is present for running the file outside of the schedule for testing
