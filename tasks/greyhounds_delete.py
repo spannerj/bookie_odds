@@ -1,6 +1,7 @@
 import os
 import psycopg2
 import logging
+from utils import send_message
 
 
 def connect_to_db():
@@ -19,7 +20,6 @@ def commit_and_close(connection):
 
 
 def clear_db():
-
     connection = connect_to_db()
     cursor = connection.cursor()
 
@@ -35,6 +35,7 @@ def clear_db():
 def reset_db():
     try:
         clear_db()
+        send_message('Database cleared', True)
 
     except Exception as e:
         logging.error(str(e))

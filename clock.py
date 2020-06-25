@@ -38,7 +38,7 @@ def daily_delete_greyhounds():
 @sched.scheduled_job('cron', minute='*', hour='7-19')
 def daily_get_greyhounds():
     logging.info(' - Getting greyhounds')
-    get_prices()
+    get_prices(False)
 
 
 logging.info(' - Schedule starting')

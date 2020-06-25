@@ -1,32 +1,17 @@
 from selenium import webdriver
-# from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.chrome.options import Options
-from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-import yagmail
 import os
 import psycopg2
-import telegram
 import logging
 import requests
 import argparse
 import time
 import random
 from datetime import datetime as dt
+from utils import send_message
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(logging.ERROR)
-
-
-def send_email(message, subject):
-    password = os.environ('PWORD')
-    yag = yagmail.SMTP('spencer.jago@digital.landregistry.gov.uk', password)
-    contents = [message]
-    emails = []
-    emails.append('spencer.jago@gmail.com')
-
-    yag.send(emails, subject, contents)
 
 
 def connect_to_db():
@@ -54,9 +39,16 @@ def get_early_prices():
                  order by race_name
                  """
 
-    cursor.execute(select_sql)
-    races = cursor.fetchall()
-    commit_and_close(connection)
+    try:
+        cursor.execute(select_sql)
+        races = cursor.fetchall()
+        commit_and_close(connection)
+    except Exception as e:
+        logging.error(e)
+        connection.rollback()
+    finally:
+        commit_and_close(connection)
+
     return races
 
 
@@ -78,7 +70,9 @@ def insert_race(race):
         cursor.execute(insert_sql, (race['name'],  race['url'], early, ))
     except Exception as e:
         logging.error(e)
-    commit_and_close(connection)
+        connection.rollback()
+    finally:
+        commit_and_close(connection)
 
 
 def update_race(race):
@@ -96,32 +90,9 @@ def update_race(race):
         cursor.execute(update_sql, (update_time,  race['name']))
     except Exception as e:
         logging.error(e)
-    commit_and_close(connection)
-
-
-def send_message(message, test_mode):
-    logging.info('Sending Telegram message')
-    token = os.environ['TELEGRAM_BOT']
-    bot = telegram.Bot(token=token)
-    message = message.replace('*', '')
-    # if channel == 'TEST':
-    if test_mode:
-        bot.send_message(chat_id='-1001365813396',
-                         text=message,
-                         parse_mode=telegram.ParseMode.MARKDOWN)  # Monitor Test
-    else:
-        bot.send_message(chat_id='-1001229649531',
-                         text=message,
-                         parse_mode=telegram.ParseMode.MARKDOWN)  # Greyhound Alerts
-
-
-def alert_sent(stadiums, race):
-    alerted = False
-    for stadium in stadiums:
-        if stadium[0] == race:
-            alerted = True
-            break
-    return alerted
+        connection.rollback()
+    finally:
+        commit_and_close(connection)
 
 
 def race_saved(early_prices, race_name):
@@ -146,6 +117,7 @@ def get_prices(test_mode):
     browser_options.add_argument("start-maximized")
     browser_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     browser_options.add_experimental_option('useAutomationExtension', False)
+    browser_options.add_argument("headless")
 
     try:
         with webdriver.Chrome(options=browser_options) as driver:
@@ -227,46 +199,10 @@ def get_prices(test_mode):
 
                     if odds != 'SP':
                         update_race(race)
-                        send_message('{} priced up!'.format(race['name']), test_mode)
-
-
-
-
-            # meetings = soup.find_all("div", class_="rsl-RaceMeeting_Uk")
-            # for meet in meetings:
-            #     race = meet.find("div", class_="rsl-MeetingHeader_RaceName").get_text()
-            #     early = meet.find("div", class_="rsl-RaceMeeting_FixedWinPriceAvailable")
-            #     first_race_time = meet.find("div", class_="rsl-UkRacingCouponLink_RaceNameTime").get_text()
-            #     driver.find_element_by_class_name("rsl-UkRacingCouponLink_RaceNameTime").click()
-            #     url = driver.current_url
-            #     print(url)
-            #     driver.save_screenshot('screenie.png')
-            #     print(first_race_time)
-            #     print('*')
-
-            #     if early is not None:
-            #         early = early.get_text()
-
-            #     races[race] = early
-            #     driver.execute_script("window.history.go(-1)")
-
-            # driver.quit()
-
-            # stadiums = get_stadiums()
-
-            # print(races)
-            # print(stadiums)
-
-            # for race, early in races.items():
-            #     if early is not None:
-            #         if not alert_sent(stadiums, race):
-            #             # send_email('priced up', race)
-            #             send_message('{} priced up!'.format(race), test_mode)
-            #             insert_race(race)
-            #             logging.info('Priced up {}'.format(race))
+                        send_message('{} priced up!'.format(race['name']), test_mode, race['name'])
 
     except Exception as e:
-        # send_message('Dog prices error - {}'.format(str(e)), True)
+        send_message('Dog prices error - {}'.format(str(e)), True)
         # send_email(str(e), 'Dog prices error')
         logging.error(str(e))
 
@@ -290,6 +226,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.test:
         print("running in test mode")
+        send_message('testing', True)
         get_prices(True)
     else:
         get_prices(False)
