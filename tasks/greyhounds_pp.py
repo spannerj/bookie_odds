@@ -36,7 +36,7 @@ def get_early_prices():
 
     select_sql = """
                  SELECT race_name, url, early_prices, odds_present
-                 FROM b365_early_prices
+                 FROM pp_early_prices
                  order by race_name
                  """
 
@@ -63,7 +63,7 @@ def insert_race(race):
         early = None
 
     insert_sql = """
-                 INSERT INTO b365_early_prices
+                 INSERT INTO pp_early_prices
                  (race_name, url, early_prices)
                  VALUES(%s, %s, %s);
                  """
@@ -83,7 +83,7 @@ def update_race(race):
     update_time = dt.now()
 
     update_sql = """
-                 UPDATE b365_early_prices
+                 UPDATE pp_early_prices
                  SET odds_present = %s
                  WHERE race_name = %s;
                  """
@@ -117,7 +117,7 @@ def all_priced_up(early_prices):
     return True
 
 
-def get_prices(test_mode):
+def get_prices_pp(test_mode):
 
     logging.info('Started')
 
@@ -143,34 +143,39 @@ def get_prices(test_mode):
 
                 driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
 
-                driver.get('https://www.bet365.com/#/AS/B4/')
+                driver.get('https://www.paddypower.com/greyhound-racing?tab=meetings')
                 try:
-                    element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsm-MarketGroupWithTabs_Wrapper'))
+                    element_present = EC.presence_of_element_located((By.CLASS_NAME, 'region-group__card-item'))
                     WebDriverWait(driver, 10).until(element_present)
                 except Exception as e:
                     logging.error(str(e))
 
                 races = []
 
-                # meetings = driver.find_elements_by_class_name("rsl-RaceMeeting_Uk")
-                # meetings = (driver.find_elements_by_class_name("rsl-MarketGroup")[1]
-                meetings = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                            .find_elements_by_class_name("rsm-RacingSplashScroller"))
-                            # .find_elements_by_class_name("rsl-RaceMeeting_Uk"))
+                # meetings = (driver.find_elements_by_class_name("region-group__card-item"))
+
+                meetings = (driver.find_elements_by_class_name("region-group")[0]
+                            .find_elements_by_class_name("region-group__card-item"))
 
                 num = len(meetings)
-                # logging.info('meetings = {}'.format(str(num)))
-
+                logging.info('meetings = {}'.format(str(num)))
+                # /html/body/page-container/div/main/div/content-managed-page/div/div[2]/div/div[2]/card-meetings-races/div/region-group[1]/div/abc-card/div/div/abc-card-content/meeting-card-item[2]/div/abc-accordion/div/div/div[2]/header-left/p[1]/span[1]
+                # body > page-container > div > main > div > content-managed-page > div > div:nth-child(3) > div > div:nth-child(2) > card-meetings-races > div > region-group:nth-child(1) > div > abc-card > div > div > abc-card-content > meeting-card-item:nth-child(3) > div > abc-accordion > div > div > div.accordion__left > header-left > p.meeting-card-item__title_wrapper > span.meeting-card-item__title.accordion__title
+                # # document.querySelector("body > page-container > div > main > div > content-managed-page > div > div:nth-child(3) > div > div:nth-child(2) > card-meetings-races > div > region-group:nth-child(1) > div > abc-card > div > div > abc-card-content > meeting-card-item:nth-child(3) > div > abc-accordion > div > div > div.accordion__left > header-left > p.meeting-card-item__title_wrapper > span.meeting-card-item__title.accordion__title")
                 for i in range(num):
                     race = {}
                     try:
-                        # race_name = (driver.find_elements_by_class_name("rsl-MarketGroup")[1]
-                        #              .find_elements_by_class_name("rsl-RaceMeeting_Uk")[i]
-                        #              .find_element_by_class_name("rsl-MeetingHeader_RaceName").text)
-                        race_name = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                                     .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
-                                     .find_element_by_class_name("rsm-MeetingHeader_MeetingName").text)
-                        # logging.info(race_name)
+                        race_name = (driver.find_elements_by_class_name("region-group")[0]
+                                     .find_elements_by_class_name("region-group__card-item")[i]
+                                     .find_element_by_class_name("accordion__header")
+                                     .find_element_by_class_name("meeting-card-item__title accordion__title").text)
+                                    
+                                    #  .find_element_by_class_name("meeting-card-item__title accordion__title").text)
+                        # race_name = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
+                        #              .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
+                        #              .find_element_by_class_name("rsm-MeetingHeader_MeetingName").text)
+                        logging.info(race_name)
+                        exit()
 
                         saved_race = race_saved(early_prices, race_name)
                         if saved_race is None:
@@ -261,6 +266,6 @@ if __name__ == '__main__':
     if args.test:
         print("running in test mode")
         # send_message('testing', True)
-        get_prices(True)
+        get_prices_pp(True)
     else:
-        get_prices(False)
+        get_prices_pp(False)

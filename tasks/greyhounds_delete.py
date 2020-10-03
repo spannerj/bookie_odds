@@ -1,7 +1,7 @@
 import os
 import psycopg2
 import logging
-from utils import send_message
+from tasks.utils import send_message
 
 
 def connect_to_db():

@@ -5,7 +5,7 @@ import yagmail
 
 
 def send_message(message, test_mode, race=None):
-    logging.info('Sending Telegram message')
+    logging.info('Sending Telegram message - {}'.format(message))
     token = os.environ['TELEGRAM_BOT']
     bot = telegram.Bot(token=token)
     message = message.replace('*', '')
@@ -15,14 +15,19 @@ def send_message(message, test_mode, race=None):
                          text=message,
                          parse_mode=telegram.ParseMode.MARKDOWN)  # Monitor Test
     else:
-        bot.send_message(chat_id='-1001229649531',
-                         text=message,
-                         parse_mode=telegram.ParseMode.MARKDOWN)  # Greyhound Alerts
-        if race is not None:
-            if ('Central' in race) or ('Hove' in race) or ('Crayford' in race):
-                bot.send_message(chat_id='-1001299965928',
-                                 text=message,
-                                 parse_mode=telegram.ParseMode.MARKDOWN)  # T&H Alerts
+        if race == 'Magic':
+            bot.send_message(chat_id='-1001459804346',
+                             text=message,
+                             parse_mode=telegram.ParseMode.MARKDOWN)  # Magic Mike Tips
+        else:
+            bot.send_message(chat_id='-1001229649531',
+                             text=message,
+                             parse_mode=telegram.ParseMode.MARKDOWN)  # Greyhound Alerts
+            if race is not None:
+                if ('Central' in race) or ('Hove' in race) or ('Crayford' in race):
+                    bot.send_message(chat_id='-1001299965928',
+                                     text=message,
+                                     parse_mode=telegram.ParseMode.MARKDOWN)  # T&H Alerts
 
 
 def send_email(message, subject):
