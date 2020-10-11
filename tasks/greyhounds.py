@@ -16,6 +16,7 @@ logging.getLogger(requests.packages.urllib3.__package__).setLevel(logging.ERROR)
 
 
 def connect_to_db():
+    # connect to selected data base
     try:
         pg_url = os.environ['PG_URL']
         connection = psycopg2.connect(pg_url)
@@ -26,11 +27,60 @@ def connect_to_db():
 
 
 def commit_and_close(connection):
+    # commit and close the transaction
     connection.commit()
     connection.close()
 
 
-def get_early_prices():
+def clear_database():
+    # clear old rows from the table ready to start again
+    connection = connect_to_db()
+    cursor = connection.cursor()
+
+    delete_sql = """
+                 DELETE FROM b365_early_prices
+                 """
+
+    result = cursor.execute(delete_sql)
+    commit_and_close(connection)
+    return result
+
+
+def get_last_update():
+    connection = connect_to_db()
+    cursor = connection.cursor()
+
+    select_sql = """
+                 SELECT max(odds_present)
+                 FROM b365_early_prices
+                 """
+
+    try:
+        cursor.execute(select_sql)
+        result = cursor.fetchall()
+
+    except Exception as e:
+        logging.error(str(e))
+        connection.rollback()
+    finally:
+        commit_and_close(connection)
+    
+    return result[0][0]
+
+
+def clear_database_check(last_update):
+    # delete database if last update was before today
+        if last_update is None:
+            return
+        else:
+            today = dt.now().date()
+            if today > last_update.date():
+                clear_database()
+                send_message('Database cleared', True)  
+                return
+
+
+def get_meeting_status():
     connection = connect_to_db()
     cursor = connection.cursor()
 
@@ -96,21 +146,23 @@ def update_race(race):
         commit_and_close(connection)
 
 
-def race_saved(early_prices, race_name):
-    race_saved = None
+def populate_meeting(early_prices, meeting_name):
+    # match the meeting to the saved data or retun None 
+    meeting = None
     for price in early_prices:
-        if price[0] == race_name:
+        if price[0] == meeting_name:
             race = {}
             race['name'] = price[0]
             race['url'] = price[1]
             race['early'] = price[2]
             race['odds'] = price[3]
-            race_saved = race
+            meeting = race
             break
-    return race_saved
+    return meeting
 
 
 def all_priced_up(early_prices):
+    # Return false if any meeting is still waiting for prices
     for price in early_prices:
         if price[3] is None:
             return False
@@ -118,13 +170,21 @@ def all_priced_up(early_prices):
 
 
 def get_prices(test_mode):
-
-    logging.info('Started')
+    # main function to check for meeting prices
+    logging.info('Started at ' + dt.now().strftime('%H:%M:%S'))
 
     try:
-        early_prices = get_early_prices()
+        # check last update and clear db if required
+        last_update = get_last_update()
+        clear_database_check(last_update)
+
+        # get meeting details from the database
+        early_prices = get_meeting_status()
+
+        # if database empty or meetings still to price up
         if (len(early_prices) == 0) or (not all_priced_up(early_prices)):
 
+            # Set up the chrome driver
             browser_options = webdriver.ChromeOptions()
             browser_options.add_argument("start-maximized")
             browser_options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -141,80 +201,111 @@ def get_prices(test_mode):
                     """
                 })
 
+                # set a regular header so we don't look like a scraper with a selenium header
                 driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
 
+                # navigate to bet365 and wait up to 10 secs for page to load
                 driver.get('https://www.bet365.com/#/AS/B4/')
                 try:
+                    logging.info('page started loading at ' + dt.now().strftime('%H:%M:%S'))
                     element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsm-MarketGroupWithTabs_Wrapper'))
                     WebDriverWait(driver, 10).until(element_present)
+                    logging.info('page loaded at ' + dt.now().strftime('%H:%M:%S'))
                 except Exception as e:
                     logging.error(str(e))
+                    driver.save_screenshot("error.png")
+
 
                 races = []
+                number_of_meetings = len(driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
+                               .find_elements_by_class_name("rsm-RacingSplashScroller"))
 
-                # meetings = driver.find_elements_by_class_name("rsl-RaceMeeting_Uk")
-                # meetings = (driver.find_elements_by_class_name("rsl-MarketGroup")[1]
-                meetings = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                            .find_elements_by_class_name("rsm-RacingSplashScroller"))
-                            # .find_elements_by_class_name("rsl-RaceMeeting_Uk"))
-
-                num = len(meetings)
-                # logging.info('meetings = {}'.format(str(num)))
-
-                for i in range(num):
+                for i in range(number_of_meetings):
                     race = {}
                     try:
-                        # race_name = (driver.find_elements_by_class_name("rsl-MarketGroup")[1]
-                        #              .find_elements_by_class_name("rsl-RaceMeeting_Uk")[i]
-                        #              .find_element_by_class_name("rsl-MeetingHeader_RaceName").text)
-                        race_name = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
+                        meeting_name = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
                                      .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
                                      .find_element_by_class_name("rsm-MeetingHeader_MeetingName").text)
-                        # logging.info(race_name)
 
-                        saved_race = race_saved(early_prices, race_name)
-                        if saved_race is None:
-                            race['name'] = race_name
+                        # populate meeting details from database or scrape them from the website if we don't have them yet
+                        saved_meeting = populate_meeting(early_prices, meeting_name)
 
-                            early = (len(driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                                     .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
-                                     .find_elements_by_class_name("rsm-RacingSplashScroller_EarlyPriceText ")) != 0)  # To Do - get early price element
-                            # early = (len(driver.find_elements_by_class_name("rsl-MarketGroup")[1]
-                            #         .find_elements_by_class_name("rsl-RaceMeeting_Uk")[i]
-                            #         .find_elements_by_class_name("rsl-RaceMeeting_FixedWinPriceAvailable")) != 0)
-                            race['early'] = early
+                        if saved_meeting is None:
+                            # meeting not on database so get details from the website
+                            race['name'] = meeting_name
+
+                            # early = (len(driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
+                            #          .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
+                            #          .find_elements_by_class_name("rsm-RacingSplashScroller_EarlyPriceText ")) != 0)  # To Do - get early price element
+
+                            race['early'] = None
+
+                            # elements = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
+                            #             .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
+                            #             .find_elements_by_class_name("rsm-UKRacingSplashParticipant_RaceName"))
 
                             elements = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
                                         .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
                                         .find_elements_by_class_name("rsm-UKRacingSplashParticipant_RaceName"))
 
+                            element_clickable = False
                             for element in elements:
                                 try:
-                                    element.click()
-                                    race['url'] = driver.current_url
-                                    break
-                                except Exception:
-                                    pass
+                                    # navigate to the individual meeting
+                                    if element_clickable:
+                                        element.click()                     
+                                        race['url'] = driver.current_url
+                                        break
+                                    
+                                    if element.is_displayed():
+                                        element_clickable = True
+                                        next
+                                    else:
+                                        next
+
+                                except Exception as ex:
+                                    print(race)
+                                    print(str(ex))
+                                    driver.save_screenshot(race['name'] + '_url.png')
 
                             race['odds'] = None
+
+                            # insert the new meeting to the database and add to the list to process
                             insert_race(race)
                             races.append(race)
+
+                            # navigate back to the meetings page
                             driver.execute_script("window.history.go(-1)")
 
+                            # try and appear human with random pauses
                             time.sleep(random.uniform(0.5, 1.5))
                         else:
-                            races.append(saved_race)
+                            # meeting is already saved on the database so just add to the list to process
+                            races.append(saved_meeting)
                     except Exception as e:
                         print(race)
                         print(str(e))
-                        pass
+                        driver.save_screenshot(race['name'] + '_error.png')
 
+                # loop through all the found meetings 
                 for race in races:
+                    # if no odds stored go and get them from the webpage
                     if race['odds'] is None:
                         try:
+                            # navigate to meeting webpage
                             driver.get(race['url'])
-                            time.sleep(2)
-                            driver.save_screenshot('odds.png')
+
+                            try:
+                                # load the page and sleep randomly to appear more human
+                                logging.debug('Meeting page started loading at ' + dt.now().strftime('%H:%M:%S'))
+                                element_present = EC.presence_of_element_located((By.CLASS_NAME, 'gl-MarketGroup_Wrapper'))
+                                WebDriverWait(driver, 10).until(element_present)
+                                time.sleep(random.uniform(0.5, 1.5))
+                                logging.debug('Meeting page finished loading at ' + dt.now().strftime('%H:%M:%S'))
+                            except Exception as e:
+                                logging.error(str(e))
+                                driver.save_screenshot(race['name'] + '_error.png')
+                         
                             odds = driver.find_element_by_class_name("srg-ParticipantGreyhoundsOdds_Odds").text
 
                             if odds != 'SP':
@@ -222,36 +313,40 @@ def get_prices(test_mode):
                                 send_message('{} priced up!'.format(race['name']), test_mode, race['name'])
 
                         except Exception as e:
-                            result = driver.find_element_by_class_name("rlm-RacingStreamingWatchButtonRaceInfo_Result") # To do get result element
+                            result = driver.find_element_by_class_name("srr-MarketEventHeaderInfoUk_ResultsLabel") # To do get result element
                             if result is not None:
                                 update_race(race)
                                 send_message('{} priced up and meeting already started!'.format(race['name']),
                                              test_mode, race['name'])
                             else:
                                 send_message('Dog prices error - {}'.format(str(e)), True)
+                                driver.save_screenshot('price_error.png')
+        else:
+            logging.info('All meetings priced up.')
 
     except Exception as e:
-        driver.save_screenshot("screenshot.png")
         logging.error(str(e))
         logging.error(race)
         try:
             send_message('Dog prices error - {}'.format(str(e)), True)
         except Exception as err:
             logging.error(str(err))
-        # send_email(str(e), 'Dog prices error')
+        driver.save_screenshot("error.png")
 
     finally:
-        logging.info('Finished')
+        logging.info('Finished at ' + dt.now().strftime('%H:%M:%S'))
         if test_mode:
             from pprint import pprint
             pprint(races)
-        # driver.quit()
 
 
 # This is present for running the file outside of the schedule for testing
 # purposes. ie. python tasks/selections.py
 if __name__ == '__main__':
-    LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+    from utils import send_message
+    # LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG').upper()
+    LOGLEVEL = 'INFO'
+    # LOGLEVEL = 'DEBUG'
     logging.basicConfig(level=LOGLEVEL)
 
     logging.debug('Started')
