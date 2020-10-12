@@ -51,7 +51,7 @@ def get_last_update():
     cursor = connection.cursor()
 
     select_sql = """
-                 SELECT max(odds_present)
+                 SELECT max(time_added)
                  FROM b365_early_prices
                  """
 
@@ -69,7 +69,7 @@ def get_last_update():
 
 
 def clear_database_check(last_update):
-    # delete database if last update was before today
+    # delete database if date added was before today
         if last_update is None:
             return
         else:
@@ -85,7 +85,7 @@ def get_meeting_status():
     cursor = connection.cursor()
 
     select_sql = """
-                 SELECT race_name, url, early_prices, odds_present
+                 SELECT race_name, url, odds_present
                  FROM b365_early_prices
                  order by race_name
                  """
@@ -107,18 +107,13 @@ def insert_race(race):
     connection = connect_to_db()
     cursor = connection.cursor()
 
-    if race['early']:
-        early = dt.now()
-    else:
-        early = None
-
     insert_sql = """
                  INSERT INTO b365_early_prices
-                 (race_name, url, early_prices)
-                 VALUES(%s, %s, %s);
+                 (race_name, url)
+                 VALUES(%s, %s);
                  """
     try:
-        cursor.execute(insert_sql, (race['name'],  race['url'], early, ))
+        cursor.execute(insert_sql, (race['name'],  race['url'], ))
     except Exception as e:
         logging.error(e)
         connection.rollback()
@@ -154,8 +149,7 @@ def populate_meeting(early_prices, meeting_name):
             race = {}
             race['name'] = price[0]
             race['url'] = price[1]
-            race['early'] = price[2]
-            race['odds'] = price[3]
+            race['odds'] = price[2]
             meeting = race
             break
     return meeting
@@ -164,7 +158,7 @@ def populate_meeting(early_prices, meeting_name):
 def all_priced_up(early_prices):
     # Return false if any meeting is still waiting for prices
     for price in early_prices:
-        if price[3] is None:
+        if price[2] is None:
             return False
     return True
 
@@ -233,16 +227,6 @@ def get_prices(test_mode):
                         if saved_meeting is None:
                             # meeting not on database so get details from the website
                             race['name'] = meeting_name
-
-                            # early = (len(driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                            #          .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
-                            #          .find_elements_by_class_name("rsm-RacingSplashScroller_EarlyPriceText ")) != 0)  # To Do - get early price element
-
-                            race['early'] = None
-
-                            # elements = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                            #             .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
-                            #             .find_elements_by_class_name("rsm-UKRacingSplashParticipant_RaceName"))
 
                             elements = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
                                         .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
