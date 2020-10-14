@@ -73,10 +73,14 @@ def clear_database_check(last_update):
         if last_update is None:
             return
         else:
+            print('last update')
+            print(last_update)
             today = dt.now().date()
+            print('today')
+            print(today)
             if today > last_update.date():
                 clear_database()
-                send_message('Database cleared', True)  
+                send_message('B365 database cleared', True)  
                 return
 
 
@@ -163,9 +167,9 @@ def all_priced_up(early_prices):
     return True
 
 
-def get_prices(test_mode):
+def get_prices_b365(test_mode):
     # main function to check for meeting prices
-    logging.info('Started at ' + dt.now().strftime('%H:%M:%S'))
+    logging.info('B365 started at ' + dt.now().strftime('%H:%M:%S'))
 
     try:
         # check last update and clear db if required
@@ -294,31 +298,31 @@ def get_prices(test_mode):
 
                             if odds != 'SP':
                                 update_race(race)
-                                send_message('{} priced up!'.format(race['name']), test_mode, race['name'])
+                                send_message('B365 {} priced up!'.format(race['name']), test_mode, race['name'])
 
                         except Exception as e:
                             result = driver.find_element_by_class_name("srr-MarketEventHeaderInfoUk_ResultsLabel") # To do get result element
                             if result is not None:
                                 update_race(race)
-                                send_message('{} priced up and meeting already started!'.format(race['name']),
+                                send_message('B365 {} priced up and meeting already started!'.format(race['name']),
                                              test_mode, race['name'])
                             else:
-                                send_message('Dog prices error - {}'.format(str(e)), True)
+                                send_message('B365 Dog prices error - {}'.format(str(e)), True)
                                 driver.save_screenshot('price_error.png')
         else:
-            logging.info('All meetings priced up.')
+            logging.info('B365 all meetings priced up.')
 
     except Exception as e:
         logging.error(str(e))
         logging.error(race)
         try:
-            send_message('Dog prices error - {}'.format(str(e)), True)
+            send_message('B365 dog prices error - {}'.format(str(e)), True)
         except Exception as err:
             logging.error(str(err))
         driver.save_screenshot("error.png")
 
     finally:
-        logging.info('Finished at ' + dt.now().strftime('%H:%M:%S'))
+        logging.info('B365 Finished at ' + dt.now().strftime('%H:%M:%S'))
         if test_mode:
             from pprint import pprint
             pprint(races)
@@ -340,6 +344,6 @@ if __name__ == '__main__':
     if args.test:
         print("running in test mode")
         # send_message('testing', True)
-        get_prices(True)
+        get_prices_b365(True)
     else:
-        get_prices(False)
+        get_prices_b365(False)
