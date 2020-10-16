@@ -10,8 +10,8 @@ import argparse
 import time
 import random
 from datetime import datetime as dt
-# from tasks.utils import send_message
-from utils import send_message
+from tasks.utils import send_message
+# from utils import send_message
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(logging.ERROR)
 
 
@@ -235,8 +235,11 @@ def get_prices_sky(test_mode):
                     for meeting in meetings:
                         race = {}
                         
-                        if meeting.text == 'Today' or meeting.text == 'Tomorrow':
+                        if meeting.text == 'Today':
                             continue  
+
+                        if meeting.text == 'Tomorrow':
+                            break  
 
                         race['name'] = meeting.find_element_by_css_selector("h2 > span.accordion__title.split > span.split__title").text
                         
@@ -284,13 +287,9 @@ def get_prices_sky(test_mode):
                             send_message('Sky - ' + race['name'] + ' priced up', test_mode) 
                             print(race['name'] + ' priced up')
                     except Exception as e:
-                        print(driver.find_element_by_css_selector("#page-content > section.islet.event-meta > h1 > span").text)
                         if driver.find_element_by_css_selector("#page-content > section.islet.event-meta > h1 > span").text == 'Settled':
+                            update_race(race)
                             send_message('Sky - It looks like ' + race['name'] + ' is in progress or finished without being priced up', test_mode)    
-                        print(str(e))
-                        driver.save_screenshot("error.png")
-                        print(meeting_list)
-                        print(race)
 
     else:
         logging.info('Sky all meetings priced up.')

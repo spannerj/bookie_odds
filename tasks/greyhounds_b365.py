@@ -295,13 +295,13 @@ def get_prices_b365(test_mode):
 
                             if odds != 'SP':
                                 update_race(race)
-                                send_message('B365 {} priced up!'.format(race['name']), test_mode, race['name'])
+                                send_message('B365 - {} priced up!'.format(race['name']), test_mode, race['name'])
 
                         except Exception as e:
                             result = driver.find_element_by_class_name("srr-MarketEventHeaderInfoUk_ResultsLabel") # To do get result element
                             if result is not None:
                                 update_race(race)
-                                send_message('B365 {} priced up and meeting already started!'.format(race['name']),
+                                send_message('B365 - {} priced up and meeting already started!'.format(race['name']),
                                              test_mode, race['name'])
                             else:
                                 send_message('B365 Dog prices error - {}'.format(str(e)), True)
