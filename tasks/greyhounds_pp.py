@@ -258,7 +258,8 @@ def get_prices_pp(test_mode):
 
                             if len(links) > 0:
                                 # if we have found links store the final race link
-                                race['url'] = links[len(links) -  1]
+                                # race['url'] = links[len(links) -  1]
+                                race['url'] = links[1]
                                 # insert race to the database
                                 insert_race(race)
                                 race['odds'] = None
@@ -294,8 +295,8 @@ def get_prices_pp(test_mode):
                         if odds.text != 'SP':
                             # update race on database
                             update_race(race)
-                            send_message('Paddy Power - ' + race['name'] + ' PRICED UP', test_mode) 
-                            print(race['name'] + ' PRICED UP')
+                            send_message('Paddy Power - ' + race['name'] + ' PRICED UP', test_mode, race['name']) 
+
                     except Exception as e:
                         if race['url'] != driver.current_url:
                             send_message('Paddy Power - It looks like ' + race['name'] + ' finished without being priced up', test_mode)    

@@ -73,11 +73,7 @@ def clear_database_check(last_update):
         if last_update is None:
             return
         else:
-            print('last update')
-            print(last_update)
             today = dt.now().date()
-            print('today')
-            print(today)
             if today > last_update.date():
                 clear_database()
                 send_message('B365 database cleared', True)  
@@ -206,10 +202,10 @@ def get_prices_b365(test_mode):
                 # navigate to bet365 and wait up to 10 secs for page to load
                 driver.get('https://www.bet365.com/#/AS/B4/')
                 try:
-                    logging.info('page started loading at ' + dt.now().strftime('%H:%M:%S'))
+                    logging.debug('page started loading at ' + dt.now().strftime('%H:%M:%S'))
                     element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsm-MarketGroupWithTabs_Wrapper'))
                     WebDriverWait(driver, 10).until(element_present)
-                    logging.info('page loaded at ' + dt.now().strftime('%H:%M:%S'))
+                    logging.debug('page loaded at ' + dt.now().strftime('%H:%M:%S'))
                 except Exception as e:
                     logging.error(str(e))
                     driver.save_screenshot("error.png")
