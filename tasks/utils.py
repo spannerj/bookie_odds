@@ -9,7 +9,6 @@ def send_message(message, test_mode, race=None):
     bot = telegram.Bot(token=token)
     message = message.replace('*', '')
 
-    test_mode = True
     if test_mode:
         bot.send_message(chat_id='-1001365813396',
                          text=message,
