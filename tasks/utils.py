@@ -1,7 +1,6 @@
 import telegram
 import logging
 import os
-import yagmail
 
 
 def send_message(message, test_mode, race=None):

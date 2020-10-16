@@ -59,11 +59,12 @@ def insert_race(race):
 
     insert_sql = """
                  INSERT INTO sky_early_prices
-                 (race_name, url)
-                 VALUES(%s, %s);
+                 (race_name, url, time_added)
+                 VALUES(%s, %s, %s);
                  """
     try:
-        cursor.execute(insert_sql, (race['name'],  race['url'], ))
+        insert_time = dt.now()
+        cursor.execute(insert_sql, (race['name'],  race['url'], insert_time, ))
     except Exception as e:
         logging.error(e)
         connection.rollback()
