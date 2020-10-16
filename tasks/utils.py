@@ -15,12 +15,12 @@ def send_message(message, test_mode, race=None):
         bot.send_message(chat_id='-1001365813396',
                          text=message,
                          parse_mode=telegram.ParseMode.MARKDOWN)  # Monitor Test
-    # else:
-    #     bot.send_message(chat_id='-1001229649531',
-    #                         text=message,
-    #                         parse_mode=telegram.ParseMode.MARKDOWN)  # Greyhound Alerts
-    #     if race is not None:
-    #         if ('Central' in race) or ('Hove' in race) or ('Crayford' in race):
-    #             bot.send_message(chat_id='-1001299965928',
-    #                                 text=message,
-    #                                 parse_mode=telegram.ParseMode.MARKDOWN)  # T&H Alerts
+    else:
+        bot.send_message(chat_id='-1001229649531',
+                            text=message,
+                            parse_mode=telegram.ParseMode.MARKDOWN)  # Greyhound Alerts
+        if race is not None:
+            if ('Central' in race) or ('Hove' in race) or ('Crayford' in race):
+                bot.send_message(chat_id='-1001299965928',
+                                    text=message,
+                                    parse_mode=telegram.ParseMode.MARKDOWN)  # T&H Alerts
