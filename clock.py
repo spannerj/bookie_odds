@@ -8,16 +8,16 @@ logging.basicConfig(level=logging.INFO)
 sched = BlockingScheduler()
 
 
-# @sched.scheduled_job('cron', second='30')
-# def daily_get_pp_greyhounds():
-#     logging.info(' - Getting PP greyhounds')
-#     get_prices_pp(False)
+@sched.scheduled_job('cron', second='30')
+def daily_get_pp_greyhounds():
+    logging.info(' - Getting PP greyhounds')
+    get_prices_pp(False)
 
 
-# @sched.scheduled_job('cron', second='0')
-# def daily_get_b365_greyhounds():
-#     logging.info(' - Getting B365 greyhounds')
-#     get_prices_b365(False)
+@sched.scheduled_job('cron', second='0')
+def daily_get_b365_greyhounds():
+    logging.info(' - Getting B365 greyhounds')
+    get_prices_b365(False)
 
 
 @sched.scheduled_job('cron', second='*/15')
