@@ -20,7 +20,7 @@ def daily_get_b365_greyhounds():
     get_prices_b365(False)
 
 
-@sched.scheduled_job('cron', second='*/15')
+@sched.scheduled_job('cron', second='15')
 def daily_get_sky_greyhounds():
     logging.info(' - Getting Sky greyhounds')
     get_prices_sky(False)

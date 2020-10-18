@@ -53,6 +53,14 @@ def get_meeting_status():
     return races
 
 
+def excluded(race):
+    excluded = False
+    excluded_list = ['Orange Park', 'Iowa', 'Derby Lane', 'Palm Beach', 'Wheeling Island']
+    if race in excluded_list:
+        excluded = True
+    return excluded
+
+
 def insert_race(race):
     connection = connect_to_db()
     cursor = connection.cursor()
@@ -254,8 +262,10 @@ def get_prices_sky(test_mode):
                             if len(links) > 0:
                                 race['url'] = links[0]
                                 race['odds'] = None
-                                insert_race(race)
-                                meeting_list.append(race)
+
+                                if not excluded(race['name']):
+                                    insert_race(race)
+                                    meeting_list.append(race)
                         else:
                             # meeting already in the database so just add to the meeting list
                             meeting_list.append(saved_meeting)
@@ -285,7 +295,7 @@ def get_prices_sky(test_mode):
                         if odds.text != 'SP':
                             # update race on database
                             update_race(race)
-                            send_message('Sky - ' + race['name'] + ' priced up', test_mode) 
+                            send_message('Sky - ' + race['name'] + ' priced up', test_mode, race['name']) 
                             print(race['name'] + ' priced up')
                     except Exception as e:
                         if driver.find_element_by_css_selector("#page-content > section.islet.event-meta > h1 > span").text == 'Settled':
