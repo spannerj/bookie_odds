@@ -3,6 +3,7 @@ import logging
 from tasks.greyhounds_b365 import get_prices_b365
 from tasks.greyhounds_pp import get_prices_pp
 from tasks.greyhounds_sky import get_prices_sky
+from tasks.greyhounds_wh import get_prices_wh
 
 logging.basicConfig(level=logging.INFO)
 sched = BlockingScheduler()
@@ -24,6 +25,12 @@ def daily_get_b365_greyhounds():
 def daily_get_sky_greyhounds():
     logging.info(' - Getting Sky greyhounds')
     get_prices_sky(False)
+
+
+@sched.scheduled_job('cron', second='45')
+def daily_get_wh_greyhounds():
+    logging.info(' - Getting William Hill greyhounds')
+    get_prices_wh(False)
 
 
 logging.info(' - Schedule starting')
