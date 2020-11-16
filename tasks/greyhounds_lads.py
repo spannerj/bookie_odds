@@ -36,7 +36,7 @@ def get_meeting_status():
 
     select_sql = """
                  SELECT race_name, url, odds_present
-                 FROM wh_early_prices
+                 FROM lads_early_prices
                  order by race_name
                  """
 
@@ -58,7 +58,7 @@ def insert_race(race):
     cursor = connection.cursor()
 
     insert_sql = """
-                 INSERT INTO wh_early_prices
+                 INSERT INTO lads_early_prices
                  (race_name, url, time_added)
                  VALUES(%s, %s, %s);
                  """
@@ -79,7 +79,7 @@ def update_race(race):
     update_time = dt.now()
 
     update_sql = """
-                 UPDATE wh_early_prices
+                 UPDATE lads_early_prices
                  SET odds_present = %s
                  WHERE race_name = %s;
                  """
@@ -134,7 +134,7 @@ def clear_database():
     cursor = connection.cursor()
 
     delete_sql = """
-                 DELETE FROM wh_early_prices
+                 DELETE FROM lads_early_prices
                  """
 
     result = cursor.execute(delete_sql)
@@ -148,7 +148,7 @@ def get_last_update():
 
     select_sql = """
                  SELECT max(time_added)
-                 FROM wh_early_prices
+                 FROM lads_early_prices
                  """
 
     try:
@@ -172,7 +172,7 @@ def clear_database_check(last_update):
             today = dt.now().date()
             if today > last_update.date():
                 clear_database()
-                send_message('William Hill database cleared', True)  
+                send_message('Ladbrokes database cleared', True)  
                 return
 
 
@@ -184,8 +184,8 @@ def all_priced_up(early_prices):
     return True
 
 
-def get_prices_wh(test_mode):
-    logging.info('William Hill Started at ' + dt.now().strftime('%H:%M:%S'))
+def get_prices_lads(test_mode):
+    logging.info('Ladbrokes Started at ' + dt.now().strftime('%H:%M:%S'))
 
     # check last update and clear db if required
     last_update = get_last_update()
@@ -216,10 +216,10 @@ def get_prices_wh(test_mode):
             driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
 
             # navigate to meetings page
-            driver.get('https://sports.williamhill.com/betting/en-gb/greyhounds/meetings')
+            driver.get('https://sports.ladbrokes.com/greyhound-racing/today')
             try:
                 # wait for cookies alert to load. No need to accept but code below commented out if needed
-                element_present = EC.presence_of_element_located((By.ID, 'racing-meetings'))
+                element_present = EC.presence_of_element_located((By.CLASS_NAME, 'accordion-left-side'))
                 WebDriverWait(driver, 10).until(element_present)
             except Exception as e:
                 logging.error(str(e))
@@ -230,31 +230,40 @@ def get_prices_wh(test_mode):
             # create empty list to hold meeting details
             meeting_list = []
             try:
-                sections = driver.find_elements_by_css_selector('#meetings-app > div.component-region-competitions > section')
+                sections = driver.find_elements_by_class_name('is-expanded')
 
                 if sections !=None:
                     for section in sections:
 
                         # find header element
-                        header = section.find_element_by_tag_name('header')
+                        try:
+                            header = section.find_element_by_class_name('accordion-left-side')
+                            heading = header.text
+                        except:
+                            heading = ''
 
                         # if section is the UK races then extract races
-                        if header.text.split()[0] == 'UK/Ireland':
+                        if heading == 'UK / IRELAND RACES':
                             # find all meetings
-                            meetings = section.find_elements_by_class_name('component-race-row')
+                            meetings = section.find_elements_by_class_name('rg-section')
 
                             for event in meetings:
                                 race = {}
 
                                 # get the race name from the section header
-                                race['name'] = event.find_element_by_css_selector('div.component-race-row-header__place > a > span > div > span').text
+                                race['name'] = event.find_element_by_class_name('rg-header').text
 
                                 # populate meeting details from database or scrape them from the website if we don't have them yet
                                 saved_meeting = populate_meeting(saved_meetings, race['name']) 
 
                                 if saved_meeting is None:
                                     # find the first race in each meeting and extract link
-                                    item = event.find_element_by_class_name('component-carousel__item')
+                                    try:
+                                        item = event.find_element_by_class_name('race-on')
+                                    except:
+                                        # if not unstarted events then find the first race result event
+                                        item = event.find_element_by_class_name('race-resulted')
+
                                     race['url'] = get_all_links(item)[0]
                                     race['odds'] = None
 
@@ -276,7 +285,7 @@ def get_prices_wh(test_mode):
 
                     try:
                         # wait for odds element to load (ideally element is on pre and post race page)
-                        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'component-selection-button-wrapper'))
+                        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'term-value'))
                         WebDriverWait(driver, 10).until(element_present)
                     except Exception as e:
                         logging.error(str(e))
@@ -284,24 +293,24 @@ def get_prices_wh(test_mode):
                     try:
                         # search for first odds element on page
                         # driver.save_screenshot('sp_pre.png')
-                        odds = driver.find_element_by_class_name('component-selection-button-wrapper')
+                        odds = driver.find_element_by_class_name('odds-price')
 
                         # if we aren't SP then we are priced up.
                         if odds.text != 'SP':
                             # update race on database
                             update_race(race)
-                            send_message('William Hill - ' + race['name'] + ' priced up', test_mode, race['name']) 
+                            send_message('Ladbrokes - ' + race['name'] + ' priced up', test_mode, race['name']) 
                     except Exception as e:
                         print(race)
                         driver.save_screenshot('sp.png')
-                        if 'Settled' in driver.find_element_by_class_name("racecardResult").text:
+                        if driver.find_element_by_class_name("results-list"):
                             update_race(race)
-                            send_message('William Hill - It looks like ' + race['name'] + ' is in progress or finished without being priced up', test_mode)    
+                            send_message('Ladbrokes - It looks like ' + race['name'] + ' is in progress or finished without being priced up', test_mode)    
 
     else:
-        logging.info('William Hill all meetings priced up.')
+        logging.info('Ladbrokes all meetings priced up.')
 
-    logging.info('William Hill finished at ' + dt.now().strftime('%H:%M:%S'))
+    logging.info('Ladbrokes finished at ' + dt.now().strftime('%H:%M:%S'))
 
 # This is present for running the file outside of the schedule for testing
 # purposes. ie. python tasks/selections.py
@@ -309,13 +318,13 @@ if __name__ == '__main__':
     LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
     logging.basicConfig(level=LOGLEVEL)
 
-    logging.debug('William Hill Started')
+    logging.debug('Ladbrokes Started')
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--test", action="store_true", help="run in test mode")
     args = parser.parse_args()
     if args.test:
         print("running in test mode")
         # send_message('testing', True)
-        get_prices_wh(True)
+        get_prices_lads(True)
     else:
-        get_prices_wh(False)
+        get_prices_lads(False)
