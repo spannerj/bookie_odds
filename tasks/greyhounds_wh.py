@@ -10,8 +10,8 @@ import argparse
 import time
 import random
 from datetime import datetime as dt
-# from tasks.utils import send_message
-from utils import send_message
+from tasks.utils import send_message
+# from utils import send_message
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(logging.ERROR)
 
 
