@@ -55,7 +55,7 @@ def get_meeting_status():
 
 def excluded(race):
     excluded = False
-    excluded_list = ['Orange Park', 'Iowa', 'Derby Lane', 'Palm Beach', 'Wheeling Island']
+    excluded_list = ['Orange Park', 'Iowa', 'Derby Lane', 'Palm Beach', 'Wheeling Island', 'Caliente', 'Caliente AM']
     if race in excluded_list:
         excluded = True
     return excluded
@@ -211,97 +211,99 @@ def get_prices_sky(test_mode):
         browser_options.add_experimental_option('useAutomationExtension', False)
         browser_options.add_argument("headless")
 
-        with webdriver.Chrome(options=browser_options) as driver:
+        try:
+            with webdriver.Chrome(options=browser_options) as driver:
 
-            driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-                "source": """
-                    Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
-                    })
-                """
-            })
+                driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                    "source": """
+                        Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                        })
+                    """
+                })
 
-            driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
+                driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
 
-            # navigate to meetings page
-            driver.get('https://m.skybet.com/greyhound-racing#tab:meetings')
-            try:
-                # wait for cookies alert to load. No need to accept but code below commented out if needed
-                element_present = EC.presence_of_element_located((By.ID, 'page-content'))
-                WebDriverWait(driver, 10).until(element_present)
-            except Exception as e:
-                logging.error(str(e))
+                # navigate to meetings page
+                driver.get('https://m.skybet.com/greyhound-racing#tab:meetings')
+                try:
+                    # wait for cookies alert to load. No need to accept but code below commented out if needed
+                    element_present = EC.presence_of_element_located((By.ID, 'page-content'))
+                    WebDriverWait(driver, 10).until(element_present)
+                except Exception as e:
+                    logging.error(str(e))
 
-            # accept cookies (need to find cookie accept element name)
-            # driver.find_element_by_css_selector("#").click()
+                # accept cookies (need to find cookie accept element name)
+                # driver.find_element_by_css_selector("#").click()
 
-            # create empty list to hold meeting details
-            meeting_list = []
-            try:
-                meetings = driver.find_elements_by_css_selector('#events-by-meeting > li')
+                # create empty list to hold meeting details
+                meeting_list = []
+                try:
+                    meetings = driver.find_elements_by_css_selector('#events-by-meeting > li')
 
-                if meetings !=None:
-                    for meeting in meetings:
-                        race = {}
-                        
-                        if meeting.text == 'Today':
-                            continue  
+                    if meetings !=None:
+                        for meeting in meetings:
+                            race = {}
+                            
+                            if meeting.text == 'Today':
+                                continue  
 
-                        if meeting.text == 'Tomorrow':
-                            break  
+                            if meeting.text == 'Tomorrow':
+                                break  
 
-                        race['name'] = meeting.find_element_by_css_selector("h2 > span.accordion__title.split > span.split__title").text
-                        
-                        # populate meeting details from database or scrape them from the website if we don't have them yet
-                        saved_meeting = populate_meeting(saved_meetings, race['name']) 
+                            race['name'] = meeting.find_element_by_css_selector("h2 > span.accordion__title.split > span.split__title").text
+                            
+                            # populate meeting details from database or scrape them from the website if we don't have them yet
+                            saved_meeting = populate_meeting(saved_meetings, race['name']) 
 
-                        if saved_meeting is None:
-                            # get all race links
-                            links = get_all_links(meeting)
+                            if saved_meeting is None:
+                                # get all race links
+                                links = get_all_links(meeting)
 
-                            if len(links) > 0:
-                                race['url'] = links[0]
-                                race['odds'] = None
+                                if len(links) > 0:
+                                    race['url'] = links[0]
+                                    race['odds'] = None
 
-                                if not excluded(race['name']):
-                                    insert_race(race)
-                                    meeting_list.append(race)
-                        else:
-                            # meeting already in the database so just add to the meeting list
-                            meeting_list.append(saved_meeting)
+                                    if not excluded(race['name'].strip()):
+                                        insert_race(race)
+                                        meeting_list.append(race)
+                            else:
+                                # meeting already in the database so just add to the meeting list
+                                meeting_list.append(saved_meeting)
 
-            except Exception as e:
-                print(str(e))
-                driver.save_screenshot("screenshot.png")
+                except Exception as e:
+                    print(str(e))
+                    driver.save_screenshot("screenshot.png")
 
-            # loop over races
-            for race in meeting_list:
-                # if race not yet priced navigate to race page
-                if race['odds'] is None:
-                    driver.get(race['url'])
+                # loop over races
+                for race in meeting_list:
+                    # if race not yet priced navigate to race page
+                    if race['odds'] is None:
+                        driver.get(race['url'])
 
-                    try:
-                        # wait for odds element to load
-                        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'event-meta__title'))
-                        WebDriverWait(driver, 10).until(element_present)
-                    except Exception as e:
-                        logging.error(str(e))
+                        try:
+                            # wait for odds element to load
+                            element_present = EC.presence_of_element_located((By.CLASS_NAME, 'event-meta__title'))
+                            WebDriverWait(driver, 10).until(element_present)
+                        except Exception as e:
+                            logging.error(str(e))
 
-                    try:
-                        # search for first odds element on page
-                        odds = driver.find_element_by_class_name('js-oc-price')
+                        try:
+                            # search for first odds element on page
+                            odds = driver.find_element_by_class_name('js-oc-price')
 
-                        # if we aren't SP then we are priced up.
-                        if odds.text != 'SP':
-                            # update race on database
-                            update_race(race)
-                            send_message('Sky - ' + race['name'] + ' priced up', test_mode, race['name']) 
-                            print(race['name'] + ' priced up')
-                    except Exception as e:
-                        if driver.find_element_by_css_selector("#page-content > section.islet.event-meta > h1 > span").text == 'Settled':
-                            update_race(race)
-                            send_message('Sky - It looks like ' + race['name'] + ' is in progress or finished without being priced up', test_mode)    
-
+                            # if we aren't SP then we are priced up.
+                            if odds.text != 'SP':
+                                # update race on database
+                                update_race(race)
+                                send_message('Sky - ' + race['name'] + ' priced up', test_mode, race['name']) 
+                                print(race['name'] + ' priced up')
+                        except Exception as e:
+                            if driver.find_element_by_css_selector("#page-content > section.islet.event-meta > h1 > span").text == 'Settled':
+                                update_race(race)
+                                send_message('Sky - It looks like ' + race['name'] + ' is in progress or finished without being priced up', test_mode)    
+        finally:
+            driver.quit()
     else:
         logging.info('Sky all meetings priced up.')
 

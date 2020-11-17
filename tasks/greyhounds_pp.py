@@ -203,108 +203,110 @@ def get_prices_pp(test_mode):
         browser_options.add_experimental_option('useAutomationExtension', False)
         browser_options.add_argument("headless")
 
-        with webdriver.Chrome(options=browser_options) as driver:
+        try:
+            with webdriver.Chrome(options=browser_options) as driver:
 
-            driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-                "source": """
-                    Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
-                    })
-                """
-            })
+                driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                    "source": """
+                        Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                        })
+                    """
+                })
 
-            driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
+                driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
 
-            # navigate to meetings page
-            driver.get('https://www.paddypower.com/greyhound-racing?tab=meetings')
-            try:
-                # wait for cookies alert to load. No need to accept but code below commented out if needed
-                element_present = EC.presence_of_element_located((By.ID, 'onetrust-accept-btn-handler'))
-                WebDriverWait(driver, 10).until(element_present)
-            except Exception as e:
-                logging.error(str(e))
+                # navigate to meetings page
+                driver.get('https://www.paddypower.com/greyhound-racing?tab=meetings')
+                try:
+                    # wait for cookies alert to load. No need to accept but code below commented out if needed
+                    element_present = EC.presence_of_element_located((By.ID, 'onetrust-accept-btn-handler'))
+                    WebDriverWait(driver, 10).until(element_present)
+                except Exception as e:
+                    logging.error(str(e))
 
-            # accept cookies
-            # driver.find_element_by_css_selector("#onetrust-accept-btn-handler").click()
+                # accept cookies
+                # driver.find_element_by_css_selector("#onetrust-accept-btn-handler").click()
 
-            # create empty list to hold meeting details
-            meeting_list = []
-            try:
-                # locate all the regions, UK, USA etc
-                groups = driver.find_elements_by_css_selector("card-meetings-races > div > region-group")
+                # create empty list to hold meeting details
+                meeting_list = []
+                try:
+                    # locate all the regions, UK, USA etc
+                    groups = driver.find_elements_by_css_selector("card-meetings-races > div > region-group")
 
-                # look through groups until we find the UK
-                uk_group = None
-                for group in groups:   
-                    location = group.find_element_by_css_selector("div.header-description > h2").text 
-                    if location == 'UK & Ireland':
-                        uk_group = group
-                        break
+                    # look through groups until we find the UK
+                    uk_group = None
+                    for group in groups:   
+                        location = group.find_element_by_css_selector("div.header-description > h2").text 
+                        if location == 'UK & Ireland':
+                            uk_group = group
+                            break
 
-                # if we have found the UK find each meeting and store details
-                if uk_group is not None:
-                    meetings = uk_group.find_elements_by_css_selector("div > abc-card-content > meeting-card-item")
-                    for meeting in meetings: 
-                        race = {}
-                        race['name'] = meeting.find_element_by_css_selector("span.meeting-card-item__title.accordion__title").text
+                    # if we have found the UK find each meeting and store details
+                    if uk_group is not None:
+                        meetings = uk_group.find_elements_by_css_selector("div > abc-card-content > meeting-card-item")
+                        for meeting in meetings: 
+                            race = {}
+                            race['name'] = meeting.find_element_by_css_selector("span.meeting-card-item__title.accordion__title").text
 
-                        # populate meeting details from database or scrape them from the website if we don't have them yet
-                        saved_meeting = populate_meeting(saved_meetings, race['name'])  
+                            # populate meeting details from database or scrape them from the website if we don't have them yet
+                            saved_meeting = populate_meeting(saved_meetings, race['name'])  
 
-                        # if meeting isn't already saved get the last race link and save to the database
-                        if saved_meeting is None:
-                            # get all race links
-                            links = get_all_links(meeting)
+                            # if meeting isn't already saved get the last race link and save to the database
+                            if saved_meeting is None:
+                                # get all race links
+                                links = get_all_links(meeting)
 
-                            if len(links) > 0:
-                                # if we have found links store the final race link
-                                # race['url'] = links[len(links) -  1]
-                                race['url'] = links[1]
-                                # insert race to the database
-                                insert_race(race)
-                                race['odds'] = None
-                                # add the race to our meeting list
-                                meeting_list.append(race)
-                                next
-                        else:
-                            # meeting already in the database so just add to the meeting list
-                            meeting_list.append(saved_meeting)
+                                if len(links) > 0:
+                                    # if we have found links store the final race link
+                                    # race['url'] = links[len(links) -  1]
+                                    race['url'] = links[1]
+                                    # insert race to the database
+                                    insert_race(race)
+                                    race['odds'] = None
+                                    # add the race to our meeting list
+                                    meeting_list.append(race)
+                                    next
+                            else:
+                                # meeting already in the database so just add to the meeting list
+                                meeting_list.append(saved_meeting)
 
-            except Exception as e:
-                print(str(e))
-                driver.save_screenshot("screenshot.png")
+                except Exception as e:
+                    print(str(e))
+                    driver.save_screenshot("screenshot.png")
 
-            # loop over races
-            for race in meeting_list:
-                # if race not yet priced navigate to race page
-                if race['odds'] is None:
-                    driver.get(race['url'])
+                # loop over races
+                for race in meeting_list:
+                    # if race not yet priced navigate to race page
+                    if race['odds'] is None:
+                        driver.get(race['url'])
 
-                    try:
-                        # wait for odds element to load
-                        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'btn-odds__label'))
-                        WebDriverWait(driver, 10).until(element_present)
-                    except Exception as e:
-                        logging.error(str(e))
+                        try:
+                            # wait for odds element to load
+                            element_present = EC.presence_of_element_located((By.CLASS_NAME, 'btn-odds__label'))
+                            WebDriverWait(driver, 10).until(element_present)
+                        except Exception as e:
+                            logging.error(str(e))
 
-                    try:
-                        # search for first odds element on page
-                        odds = driver.find_element_by_css_selector('div.button__content-container > ng-transclude > span')
+                        try:
+                            # search for first odds element on page
+                            odds = driver.find_element_by_css_selector('div.button__content-container > ng-transclude > span')
 
-                        # if we aren't SP then we are priced up.
-                        if odds.text != 'SP':
-                            # update race on database
-                            update_race(race)
-                            send_message('Paddy Power - ' + race['name'] + ' priced up', test_mode, race['name']) 
+                            # if we aren't SP then we are priced up.
+                            if odds.text != 'SP':
+                                # update race on database
+                                update_race(race)
+                                send_message('Paddy Power - ' + race['name'] + ' priced up', test_mode, race['name']) 
 
-                    except Exception as e:
-                        if race['url'] != driver.current_url:
-                            send_message('Paddy Power - It looks like ' + race['name'] + ' finished without being priced up', test_mode)    
-                        print(str(e))
-                        driver.save_screenshot("error.png")
-                        print(meeting_list)
-                        print(race)
-
+                        except Exception as e:
+                            if race['url'] != driver.current_url:
+                                send_message('Paddy Power - It looks like ' + race['name'] + ' finished without being priced up', test_mode)    
+                            print(str(e))
+                            driver.save_screenshot("error.png")
+                            print(meeting_list)
+                            print(race)
+        finally:
+            driver.quit()
     else:
         logging.info('PP all meetings priced up.')
 

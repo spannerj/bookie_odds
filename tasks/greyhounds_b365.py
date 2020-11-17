@@ -186,126 +186,129 @@ def get_prices_b365(test_mode):
             browser_options.add_experimental_option('useAutomationExtension', False)
             browser_options.add_argument("headless")
 
-            with webdriver.Chrome(options=browser_options) as driver:
+            try:
+                with webdriver.Chrome(options=browser_options) as driver:
 
-                driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-                    "source": """
-                        Object.defineProperty(navigator, 'webdriver', {
-                        get: () => undefined
-                        })
-                    """
-                })
+                    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                        "source": """
+                            Object.defineProperty(navigator, 'webdriver', {
+                            get: () => undefined
+                            })
+                        """
+                    })
 
-                # set a regular header so we don't look like a scraper with a selenium header
-                driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
+                    # set a regular header so we don't look like a scraper with a selenium header
+                    driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
 
-                # navigate to bet365 and wait up to 10 secs for page to load
-                driver.get('https://www.bet365.com/#/AS/B4/')
-                try:
-                    logging.debug('page started loading at ' + dt.now().strftime('%H:%M:%S'))
-                    element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsm-MarketGroupWithTabs_Wrapper'))
-                    WebDriverWait(driver, 10).until(element_present)
-                    logging.debug('page loaded at ' + dt.now().strftime('%H:%M:%S'))
-                except Exception as e:
-                    logging.error(str(e))
-                    driver.save_screenshot("error.png")
-
-
-                races = []
-                number_of_meetings = len(driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                               .find_elements_by_class_name("rsm-RacingSplashScroller"))
-
-                for i in range(number_of_meetings):
-                    race = {}
+                    # navigate to bet365 and wait up to 10 secs for page to load
+                    driver.get('https://www.bet365.com/#/AS/B4/')
                     try:
-                        meeting_name = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                                     .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
-                                     .find_element_by_class_name("rsm-MeetingHeader_MeetingName").text)
-
-                        # populate meeting details from database or scrape them from the website if we don't have them yet
-                        saved_meeting = populate_meeting(early_prices, meeting_name)
-
-                        if saved_meeting is None:
-                            # meeting not on database so get details from the website
-                            race['name'] = meeting_name
-
-                            elements = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
-                                        .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
-                                        .find_elements_by_class_name("rsm-UKRacingSplashParticipant_RaceName"))
-
-                            element_clickable = False
-                            for element in elements:
-                                try:
-                                    # navigate to the individual meeting
-                                    if element_clickable:
-                                        element.click()                     
-                                        race['url'] = driver.current_url
-                                        break
-                                    
-                                    if element.is_displayed():
-                                        element_clickable = True
-                                        next
-                                    else:
-                                        next
-
-                                except Exception as ex:
-                                    print(race)
-                                    print(str(ex))
-                                    driver.save_screenshot(race['name'] + '_url.png')
-
-                            race['odds'] = None
-
-                            # insert the new meeting to the database and add to the list to process
-                            insert_race(race)
-                            races.append(race)
-
-                            # navigate back to the meetings page
-                            driver.execute_script("window.history.go(-1)")
-
-                            # try and appear human with random pauses
-                            time.sleep(random.uniform(0.5, 1.5))
-                        else:
-                            # meeting is already saved on the database so just add to the list to process
-                            races.append(saved_meeting)
+                        logging.debug('page started loading at ' + dt.now().strftime('%H:%M:%S'))
+                        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'rsm-MarketGroupWithTabs_Wrapper'))
+                        WebDriverWait(driver, 10).until(element_present)
+                        logging.debug('page loaded at ' + dt.now().strftime('%H:%M:%S'))
                     except Exception as e:
-                        print(race)
-                        print(str(e))
-                        driver.save_screenshot(race['name'] + '_error.png')
+                        logging.error(str(e))
+                        driver.save_screenshot("error.png")
 
-                # loop through all the found meetings 
-                for race in races:
-                    # if no odds stored go and get them from the webpage
-                    if race['odds'] is None:
+
+                    races = []
+                    number_of_meetings = len(driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
+                                .find_elements_by_class_name("rsm-RacingSplashScroller"))
+
+                    for i in range(number_of_meetings):
+                        race = {}
                         try:
-                            # navigate to meeting webpage
-                            driver.get(race['url'])
+                            meeting_name = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
+                                        .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
+                                        .find_element_by_class_name("rsm-MeetingHeader_MeetingName").text)
 
-                            try:
-                                # load the page and sleep randomly to appear more human
-                                logging.debug('Meeting page started loading at ' + dt.now().strftime('%H:%M:%S'))
-                                element_present = EC.presence_of_element_located((By.CLASS_NAME, 'gl-MarketGroup_Wrapper'))
-                                WebDriverWait(driver, 10).until(element_present)
+                            # populate meeting details from database or scrape them from the website if we don't have them yet
+                            saved_meeting = populate_meeting(early_prices, meeting_name)
+
+                            if saved_meeting is None:
+                                # meeting not on database so get details from the website
+                                race['name'] = meeting_name
+
+                                elements = (driver.find_element_by_class_name("rsm-MarketGroupWithTabs_Wrapper")
+                                            .find_elements_by_class_name("rsm-RacingSplashScroller")[i]
+                                            .find_elements_by_class_name("rsm-UKRacingSplashParticipant_RaceName"))
+
+                                element_clickable = False
+                                for element in elements:
+                                    try:
+                                        # navigate to the individual meeting
+                                        if element_clickable:
+                                            element.click()                     
+                                            race['url'] = driver.current_url
+                                            break
+                                        
+                                        if element.is_displayed():
+                                            element_clickable = True
+                                            next
+                                        else:
+                                            next
+
+                                    except Exception as ex:
+                                        print(race)
+                                        print(str(ex))
+                                        driver.save_screenshot(race['name'] + '_url.png')
+
+                                race['odds'] = None
+
+                                # insert the new meeting to the database and add to the list to process
+                                insert_race(race)
+                                races.append(race)
+
+                                # navigate back to the meetings page
+                                driver.execute_script("window.history.go(-1)")
+
+                                # try and appear human with random pauses
                                 time.sleep(random.uniform(0.5, 1.5))
-                                logging.debug('Meeting page finished loading at ' + dt.now().strftime('%H:%M:%S'))
-                            except Exception as e:
-                                logging.error(str(e))
-                                driver.save_screenshot(race['name'] + '_error.png')
-                         
-                            odds = driver.find_element_by_class_name("srg-ParticipantGreyhoundsOdds_Odds").text
-
-                            if odds != 'SP':
-                                update_race(race)
-                                send_message('B365 - {} priced up!'.format(race['name']), test_mode, race['name'])
-
-                        except Exception as e:
-                            result = driver.find_element_by_class_name("srr-MarketEventHeaderInfoUk_ResultsLabel") # To do get result element
-                            if result is not None:
-                                update_race(race)
-                                send_message('B365 - {} priced up and meeting already started!'.format(race['name']),
-                                             test_mode, race['name'])
                             else:
-                                send_message('B365 Dog prices error - {}'.format(str(e)), True)
-                                driver.save_screenshot('price_error.png')
+                                # meeting is already saved on the database so just add to the list to process
+                                races.append(saved_meeting)
+                        except Exception as e:
+                            print(race)
+                            print(str(e))
+                            driver.save_screenshot(race['name'] + '_error.png')
+
+                    # loop through all the found meetings 
+                    for race in races:
+                        # if no odds stored go and get them from the webpage
+                        if race['odds'] is None:
+                            try:
+                                # navigate to meeting webpage
+                                driver.get(race['url'])
+
+                                try:
+                                    # load the page and sleep randomly to appear more human
+                                    logging.debug('Meeting page started loading at ' + dt.now().strftime('%H:%M:%S'))
+                                    element_present = EC.presence_of_element_located((By.CLASS_NAME, 'gl-MarketGroup_Wrapper'))
+                                    WebDriverWait(driver, 10).until(element_present)
+                                    time.sleep(random.uniform(0.5, 1.5))
+                                    logging.debug('Meeting page finished loading at ' + dt.now().strftime('%H:%M:%S'))
+                                except Exception as e:
+                                    logging.error(str(e))
+                                    driver.save_screenshot(race['name'] + '_error.png')
+                            
+                                odds = driver.find_element_by_class_name("srg-ParticipantGreyhoundsOdds_Odds").text
+
+                                if odds != 'SP':
+                                    update_race(race)
+                                    send_message('B365 - {} priced up!'.format(race['name']), test_mode, race['name'])
+
+                            except Exception as e:
+                                result = driver.find_element_by_class_name("srr-MarketEventHeaderInfoUk_ResultsLabel") # To do get result element
+                                if result is not None:
+                                    update_race(race)
+                                    send_message('B365 - {} priced up and meeting already started!'.format(race['name']),
+                                                test_mode, race['name'])
+                                else:
+                                    send_message('B365 Dog prices error - {}'.format(str(e)), True)
+                                    driver.save_screenshot('price_error.png')
+            finally:
+                driver.quit()
         else:
             logging.info('B365 all meetings priced up.')
 

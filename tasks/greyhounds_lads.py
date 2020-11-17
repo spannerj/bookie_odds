@@ -203,110 +203,113 @@ def get_prices_lads(test_mode):
         browser_options.add_experimental_option('useAutomationExtension', False)
         browser_options.add_argument("headless")
 
-        with webdriver.Chrome(options=browser_options) as driver:
+        try:
+            with webdriver.Chrome(options=browser_options) as driver:
 
-            driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-                "source": """
-                    Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
-                    })
-                """
-            })
+                driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                    "source": """
+                        Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                        })
+                    """
+                })
 
-            driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
+                driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
 
-            # navigate to meetings page
-            driver.get('https://sports.ladbrokes.com/greyhound-racing/today')
-            try:
-                # wait for cookies alert to load. No need to accept but code below commented out if needed
-                element_present = EC.presence_of_element_located((By.CLASS_NAME, 'accordion-left-side'))
-                WebDriverWait(driver, 10).until(element_present)
-            except Exception as e:
-                logging.error(str(e))
+                # navigate to meetings page
+                driver.get('https://sports.ladbrokes.com/greyhound-racing/today')
+                try:
+                    # wait for cookies alert to load. No need to accept but code below commented out if needed
+                    element_present = EC.presence_of_element_located((By.CLASS_NAME, 'accordion-left-side'))
+                    WebDriverWait(driver, 10).until(element_present)
+                except Exception as e:
+                    logging.error(str(e))
 
-            # accept cookies (need to find cookie accept element name)
-            # driver.find_element_by_css_selector("#").click()
+                # accept cookies (need to find cookie accept element name)
+                # driver.find_element_by_css_selector("#").click()
 
-            # create empty list to hold meeting details
-            meeting_list = []
-            try:
-                sections = driver.find_elements_by_class_name('is-expanded')
+                # create empty list to hold meeting details
+                meeting_list = []
+                try:
+                    sections = driver.find_elements_by_class_name('is-expanded')
 
-                if sections !=None:
-                    for section in sections:
+                    if sections !=None:
+                        for section in sections:
 
-                        # find header element
+                            # find header element
+                            try:
+                                header = section.find_element_by_class_name('accordion-left-side')
+                                heading = header.text
+                            except:
+                                heading = ''
+
+                            # if section is the UK races then extract races
+                            if heading == 'UK / IRELAND RACES':
+                                # find all meetings
+                                meetings = section.find_elements_by_class_name('rg-section')
+
+                                for event in meetings:
+                                    race = {}
+
+                                    # get the race name from the section header
+                                    race['name'] = event.find_element_by_class_name('rg-header').text
+
+                                    # populate meeting details from database or scrape them from the website if we don't have them yet
+                                    saved_meeting = populate_meeting(saved_meetings, race['name']) 
+
+                                    if saved_meeting is None:
+                                        # find the first race in each meeting and extract link
+                                        try:
+                                            item = event.find_element_by_class_name('race-on')
+                                        except:
+                                            # if not unstarted events then find the first race result event
+                                            item = event.find_element_by_class_name('race-resulted')
+
+                                        race['url'] = get_all_links(item)[0]
+                                        race['odds'] = None
+
+                                        insert_race(race)
+                                        meeting_list.append(race)
+                                    else:
+                                        # meeting already in the database so just add to the meeting list
+                                        meeting_list.append(saved_meeting)
+
+                except Exception as e:
+                    print(str(e))
+                    driver.save_screenshot("screenshot.png")
+
+                # loop over races
+                for race in meeting_list:
+                    # if race not yet priced navigate to race page
+                    if race['odds'] is None:
+                        driver.get(race['url'])
+
                         try:
-                            header = section.find_element_by_class_name('accordion-left-side')
-                            heading = header.text
-                        except:
-                            heading = ''
+                            # wait for odds element to load (ideally element is on pre and post race page)
+                            element_present = EC.presence_of_element_located((By.CLASS_NAME, 'term-value'))
+                            WebDriverWait(driver, 10).until(element_present)
+                        except Exception as e:
+                            logging.error(str(e))
 
-                        # if section is the UK races then extract races
-                        if heading == 'UK / IRELAND RACES':
-                            # find all meetings
-                            meetings = section.find_elements_by_class_name('rg-section')
+                        try:
+                            # search for first odds element on page
+                            # driver.save_screenshot('sp_pre.png')
+                            odds = driver.find_element_by_class_name('odds-price')
 
-                            for event in meetings:
-                                race = {}
-
-                                # get the race name from the section header
-                                race['name'] = event.find_element_by_class_name('rg-header').text
-
-                                # populate meeting details from database or scrape them from the website if we don't have them yet
-                                saved_meeting = populate_meeting(saved_meetings, race['name']) 
-
-                                if saved_meeting is None:
-                                    # find the first race in each meeting and extract link
-                                    try:
-                                        item = event.find_element_by_class_name('race-on')
-                                    except:
-                                        # if not unstarted events then find the first race result event
-                                        item = event.find_element_by_class_name('race-resulted')
-
-                                    race['url'] = get_all_links(item)[0]
-                                    race['odds'] = None
-
-                                    insert_race(race)
-                                    meeting_list.append(race)
-                                else:
-                                    # meeting already in the database so just add to the meeting list
-                                    meeting_list.append(saved_meeting)
-
-            except Exception as e:
-                print(str(e))
-                driver.save_screenshot("screenshot.png")
-
-            # loop over races
-            for race in meeting_list:
-                # if race not yet priced navigate to race page
-                if race['odds'] is None:
-                    driver.get(race['url'])
-
-                    try:
-                        # wait for odds element to load (ideally element is on pre and post race page)
-                        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'term-value'))
-                        WebDriverWait(driver, 10).until(element_present)
-                    except Exception as e:
-                        logging.error(str(e))
-
-                    try:
-                        # search for first odds element on page
-                        # driver.save_screenshot('sp_pre.png')
-                        odds = driver.find_element_by_class_name('odds-price')
-
-                        # if we aren't SP then we are priced up.
-                        if odds.text != 'SP':
-                            # update race on database
-                            update_race(race)
-                            send_message('Ladbrokes - ' + race['name'] + ' priced up', test_mode, race['name']) 
-                    except Exception as e:
-                        print(race)
-                        driver.save_screenshot('sp.png')
-                        if driver.find_element_by_class_name("results-list"):
-                            update_race(race)
-                            send_message('Ladbrokes - It looks like ' + race['name'] + ' is in progress or finished without being priced up', test_mode)    
-
+                            # if we aren't SP then we are priced up.
+                            if odds.text != 'SP':
+                                # update race on database
+                                update_race(race)
+                                send_message('Ladbrokes - ' + race['name'] + ' priced up', test_mode, race['name']) 
+                        except Exception as e:
+                            print(str(e))
+                            print(race)
+                            driver.save_screenshot('sp.png')
+                            if driver.find_element_by_class_name("results-list"):
+                                update_race(race)
+                                send_message('Ladbrokes - It looks like ' + race['name'] + ' is in progress or finished without being priced up', test_mode)    
+        finally:
+            driver.quit()
     else:
         logging.info('Ladbrokes all meetings priced up.')
 
